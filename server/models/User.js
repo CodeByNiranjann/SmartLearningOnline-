@@ -41,6 +41,20 @@ const userSchema = new mongoose.Schema(
         ref: 'Course',
       },
     ],
+    isTwoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      default: null,
+    },
+    twoFactorBackupCodes: [
+      {
+        code: { type: String },
+        used: { type: Boolean, default: false },
+      },
+    ],
   },
   { timestamps: true }
 );

@@ -49,6 +49,19 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const data = await loginUser(email, password);
+    if (data.requires2FA) {
+      // 2FA required: do not store session yet, return challenge details for 2FA screen
+      return data;
+    }
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('sessionId', data.sessionId);
+    setToken(data.token);
+    setSessionId(data.sessionId);
+    setUser(data.user);
+    return data;
+  };
+
+  const complete2FALogin = (data) => {
     localStorage.setItem('token', data.token);
     localStorage.setItem('sessionId', data.sessionId);
     setToken(data.token);
@@ -95,11 +108,13 @@ export const AuthProvider = ({ children }) => {
     <AuthContext.Provider
       value={{
         user,
+        setUser,
         token,
         sessionId,
         loading,
         isAuthenticated: !!user && !!token && !!sessionId,
         login,
+        complete2FALogin,
         register,
         logout,
         logoutAll,

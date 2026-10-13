@@ -58,6 +58,32 @@ export const fetchActiveSessions = async () => {
   return response.data;
 };
 
+// Two-Factor Authentication Services
+export const verify2FALogin = async (tempToken, code) => {
+  const response = await api.post('/auth/login-2fa', { tempToken, code });
+  return response.data;
+};
+
+export const setup2FA = async () => {
+  const response = await api.post('/auth/setup-2fa');
+  return response.data;
+};
+
+export const enable2FA = async (secret, token) => {
+  const response = await api.post('/auth/enable-2fa', { secret, token });
+  return response.data;
+};
+
+export const disable2FA = async (password = '') => {
+  const response = await api.post('/auth/disable-2fa', { password });
+  return response.data;
+};
+
+export const fetch2FABackupCodesStatus = async () => {
+  const response = await api.get('/auth/backup-codes');
+  return response.data;
+};
+
 // Course Services
 export const fetchCourses = async (params = {}) => {
   const response = await api.get('/courses', { params });

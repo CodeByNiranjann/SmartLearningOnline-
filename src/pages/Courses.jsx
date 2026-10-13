@@ -41,28 +41,28 @@ const Courses = () => {
   }, [searchTerm, categoryFilter, difficultyFilter]);
 
   return (
-    <div className="space-y-8">
-      {/* Header Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-indigo-900/40 via-purple-900/30 to-slate-900 border border-indigo-500/20 p-8 md:p-10 overflow-hidden shadow-2xl">
+    <div className="space-y-8 font-sans">
+      {/* Header Banner (Matching LearnHub Figma Design) */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-8 md:p-10 text-white overflow-hidden shadow-xl shadow-blue-600/10">
         <div className="relative z-10 max-w-3xl space-y-3">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold uppercase tracking-wider">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider">
             <Compass className="w-3.5 h-3.5" />
             <span>Course Catalog</span>
           </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold text-white tracking-tight">
-            Explore Available Courses
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
+            Explore All Courses
           </h1>
-          <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-            Discover structured learning paths designed by industry experts. Build real-world skills in web development, Java programming, algorithms, and software engineering.
+          <p className="text-blue-100 text-sm md:text-base leading-relaxed">
+            Discover structured learning paths designed by industry experts. Build real-world skills in web development, algorithms, and software engineering.
           </p>
         </div>
       </div>
 
       {/* Controls Bar: Search & Filters */}
-      <div className="bg-slate-900/80 p-4 md:p-6 rounded-2xl border border-slate-800 shadow-xl flex flex-col md:flex-row items-center gap-4 justify-between">
+      <div className="bg-white p-4 md:p-6 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col md:flex-row items-center gap-4 justify-between">
         {/* Search Input */}
         <div className="relative w-full md:w-96">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-500">
+          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
             <Search className="w-4 h-4" />
           </div>
           <input
@@ -70,7 +70,7 @@ const Courses = () => {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             placeholder="Search courses, skills, or instructors..."
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm transition-all"
+            className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm transition-all"
           />
         </div>
 
@@ -81,7 +81,7 @@ const Courses = () => {
             <select
               value={categoryFilter}
               onChange={(e) => setCategoryFilter(e.target.value)}
-              className="w-full md:w-auto px-3 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full md:w-auto px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
             >
               {categories.map((cat) => (
                 <option key={cat} value={cat}>
@@ -95,7 +95,7 @@ const Courses = () => {
             <select
               value={difficultyFilter}
               onChange={(e) => setDifficultyFilter(e.target.value)}
-              className="w-full md:w-auto px-3 py-2.5 bg-slate-800/90 border border-slate-700/80 rounded-xl text-slate-200 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full md:w-auto px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-700 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 cursor-pointer"
             >
               {difficulties.map((diff) => (
                 <option key={diff} value={diff}>
@@ -111,31 +111,30 @@ const Courses = () => {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((n) => (
-            <div key={n} className="bg-slate-900/60 rounded-2xl h-96 border border-slate-800 animate-pulse p-4 space-y-4">
-              <div className="w-full h-48 bg-slate-800 rounded-xl" />
-              <div className="h-6 bg-slate-800 rounded w-3/4" />
-              <div className="h-4 bg-slate-800 rounded w-full" />
-              <div className="h-4 bg-slate-800 rounded w-5/6" />
+            <div key={n} className="bg-white rounded-2xl h-80 border border-slate-200 animate-pulse p-4 space-y-4">
+              <div className="w-full h-40 bg-slate-100 rounded-xl" />
+              <div className="h-5 bg-slate-100 rounded w-3/4" />
+              <div className="h-4 bg-slate-100 rounded w-full" />
             </div>
           ))}
         </div>
       ) : error ? (
-        <div className="bg-rose-500/10 border border-rose-500/30 p-8 rounded-2xl text-center space-y-3">
-          <AlertCircle className="w-10 h-10 text-rose-400 mx-auto" />
-          <h3 className="text-lg font-bold text-white">Unable to load courses</h3>
-          <p className="text-sm text-slate-400">{error}</p>
+        <div className="bg-rose-50 border border-rose-200 p-8 rounded-2xl text-center space-y-3">
+          <AlertCircle className="w-10 h-10 text-rose-600 mx-auto" />
+          <h3 className="text-lg font-bold text-slate-900">Unable to load courses</h3>
+          <p className="text-sm text-slate-500">{error}</p>
           <button
             onClick={loadCourses}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-semibold text-xs transition-colors"
           >
             <RefreshCw className="w-4 h-4" /> Try Again
           </button>
         </div>
       ) : courses.length === 0 ? (
-        <div className="bg-slate-900/60 border border-slate-800 p-12 rounded-2xl text-center space-y-3">
-          <Compass className="w-12 h-12 text-slate-600 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No courses match your criteria</h3>
-          <p className="text-sm text-slate-400 max-w-md mx-auto">
+        <div className="bg-white border border-slate-200 p-12 rounded-2xl text-center space-y-3">
+          <Compass className="w-12 h-12 text-slate-400 mx-auto" />
+          <h3 className="text-lg font-bold text-slate-900">No courses match your criteria</h3>
+          <p className="text-sm text-slate-500 max-w-md mx-auto">
             Try resetting your search query or category filters to discover available courses.
           </p>
           <button
@@ -144,7 +143,7 @@ const Courses = () => {
               setCategoryFilter('All');
               setDifficultyFilter('All');
             }}
-            className="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-xs hover:bg-indigo-500 transition-colors"
+            className="px-4 py-2 rounded-xl bg-blue-600 text-white font-semibold text-xs hover:bg-blue-700 transition-colors"
           >
             Clear All Filters
           </button>

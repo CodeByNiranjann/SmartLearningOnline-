@@ -2,6 +2,8 @@ import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import speakeasy from 'speakeasy';
+import QRCode from 'qrcode';
 import User from '../models/User.js';
 import Session from '../models/Session.js';
 import { protect } from '../middleware/authMiddleware.js';
@@ -106,7 +108,7 @@ router.post('/register', async (req, res) => {
 });
 
 // @route   POST /api/auth/login
-// @desc    Authenticate user & return session ID with JWT token
+// @desc    Authenticate user & return session ID with JWT token (or 2FA challenge)
 // @access  Public
 router.post('/login', async (req, res) => {
   try {
@@ -126,6 +128,21 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Check if user has 2FA enabled
+    if (user.isTwoFactorEnabled) {
+      const tempToken = jwt.sign(
+        { id: user._id, type: '2fa_challenge' },
+        process.env.JWT_SECRET || 'super_secret_slp_learning_jwt_key_2026',
+        { expiresIn: '10m' }
+      );
+      return res.json({
+        requires2FA: true,
+        tempToken,
+        email: user.email,
+        name: user.name,
+      });
+    }
+
     // Create new session entry in MongoDB
     const session = await createSession(user._id, req);
     const token = generateToken(user._id, session.sessionId);
@@ -140,11 +157,91 @@ router.post('/login', async (req, res) => {
         role: user.role,
         avatar: user.avatar || '',
         headline: user.headline || '',
+        isTwoFactorEnabled: !!user.isTwoFactorEnabled,
       },
     });
   } catch (error) {
     console.error('Login error:', error);
     res.status(500).json({ message: 'Server error during login' });
+  }
+});
+
+// @route   POST /api/auth/login-2fa
+// @desc    Verify 2FA TOTP code or backup code to complete login
+// @access  Public
+router.post('/login-2fa', async (req, res) => {
+  try {
+    const { tempToken, code } = req.body;
+
+    if (!tempToken || !code) {
+      return res.status(400).json({ message: 'Verification code and challenge token are required' });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(
+        tempToken,
+        process.env.JWT_SECRET || 'super_secret_slp_learning_jwt_key_2026'
+      );
+    } catch {
+      return res.status(401).json({ message: 'Session expired. Please sign in again.' });
+    }
+
+    if (decoded.type !== '2fa_challenge') {
+      return res.status(401).json({ message: 'Invalid verification token' });
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user || !user.isTwoFactorEnabled) {
+      return res.status(400).json({ message: 'Two-factor authentication is not configured for this user' });
+    }
+
+    const sanitizedCode = code.toString().trim().replace(/[-\s]/g, '');
+
+    // Check TOTP token
+    const isTotpValid = speakeasy.totp.verify({
+      secret: user.twoFactorSecret,
+      encoding: 'base32',
+      token: sanitizedCode,
+      window: 1, // allow 30 seconds leeway
+    });
+
+    let isBackupCodeValid = false;
+    if (!isTotpValid && user.twoFactorBackupCodes && user.twoFactorBackupCodes.length > 0) {
+      const matchIndex = user.twoFactorBackupCodes.findIndex(
+        (b) => !b.used && b.code.replace(/[-\s]/g, '').toLowerCase() === sanitizedCode.toLowerCase()
+      );
+      if (matchIndex !== -1) {
+        user.twoFactorBackupCodes[matchIndex].used = true;
+        await user.save();
+        isBackupCodeValid = true;
+      }
+    }
+
+    if (!isTotpValid && !isBackupCodeValid) {
+      return res.status(400).json({ message: 'Invalid verification code or backup code' });
+    }
+
+    // Success - create session and token
+    const session = await createSession(user._id, req);
+    const token = generateToken(user._id, session.sessionId);
+
+    res.json({
+      token,
+      sessionId: session.sessionId,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar || '',
+        headline: user.headline || '',
+        isTwoFactorEnabled: true,
+      },
+    });
+  } catch (error) {
+    console.error('2FA Login verification error:', error);
+    res.status(500).json({ message: 'Server error during 2FA verification' });
   }
 });
 
@@ -222,6 +319,134 @@ router.get('/me', protect, async (req, res) => {
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error fetching user profile' });
+  }
+});
+
+// @route   POST /api/auth/setup-2fa
+// @desc    Generate 2FA secret and QR code for user to scan in Authenticator App
+// @access  Private
+router.post('/setup-2fa', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    const secret = speakeasy.generateSecret({
+      name: `LearnHub (${user.email})`,
+      issuer: 'LearnHub',
+      length: 20,
+    });
+
+    // Generate QR Code data URL
+    const qrCodeDataUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+    res.json({
+      secret: secret.base32,
+      otpauthUrl: secret.otpauth_url,
+      qrCode: qrCodeDataUrl,
+    });
+  } catch (error) {
+    console.error('Setup 2FA error:', error);
+    res.status(500).json({ message: 'Failed to generate two-factor authentication setup' });
+  }
+});
+
+// @route   POST /api/auth/enable-2fa
+// @desc    Verify TOTP token against secret, enable 2FA, and generate backup codes
+// @access  Private
+router.post('/enable-2fa', protect, async (req, res) => {
+  try {
+    const { secret, token } = req.body;
+
+    if (!secret || !token) {
+      return res.status(400).json({ message: 'Secret and verification token are required' });
+    }
+
+    const isVerified = speakeasy.totp.verify({
+      secret,
+      encoding: 'base32',
+      token: token.toString().trim().replace(/[-\s]/g, ''),
+      window: 1,
+    });
+
+    if (!isVerified) {
+      return res.status(400).json({ message: 'Invalid verification code. Please try again.' });
+    }
+
+    // Generate 8 random backup codes (8 characters each: XXXX-XXXX)
+    const backupCodes = Array.from({ length: 8 }, () => {
+      const part1 = crypto.randomBytes(2).toString('hex').toUpperCase();
+      const part2 = crypto.randomBytes(2).toString('hex').toUpperCase();
+      return `${part1}-${part2}`;
+    });
+
+    const user = await User.findById(req.user._id);
+    user.isTwoFactorEnabled = true;
+    user.twoFactorSecret = secret;
+    user.twoFactorBackupCodes = backupCodes.map((code) => ({ code, used: false }));
+    await user.save();
+
+    res.json({
+      message: 'Two-factor authentication successfully enabled',
+      backupCodes,
+      isTwoFactorEnabled: true,
+    });
+  } catch (error) {
+    console.error('Enable 2FA error:', error);
+    res.status(500).json({ message: 'Failed to enable two-factor authentication' });
+  }
+});
+
+// @route   POST /api/auth/disable-2fa
+// @desc    Disable two-factor authentication for current user
+// @access  Private
+router.post('/disable-2fa', protect, async (req, res) => {
+  try {
+    const { password } = req.body;
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Require password confirmation to disable 2FA
+    if (password) {
+      const isMatch = await bcrypt.compare(password, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Incorrect password. Cannot disable 2FA.' });
+      }
+    }
+
+    user.isTwoFactorEnabled = false;
+    user.twoFactorSecret = null;
+    user.twoFactorBackupCodes = [];
+    await user.save();
+
+    res.json({
+      message: 'Two-factor authentication disabled successfully',
+      isTwoFactorEnabled: false,
+    });
+  } catch (error) {
+    console.error('Disable 2FA error:', error);
+    res.status(500).json({ message: 'Failed to disable two-factor authentication' });
+  }
+});
+
+// @route   GET /api/auth/backup-codes
+// @desc    Get remaining backup codes count or status
+// @access  Private
+router.get('/backup-codes', protect, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    const codes = user.twoFactorBackupCodes || [];
+    const remainingCount = codes.filter((c) => !c.used).length;
+    res.json({
+      isTwoFactorEnabled: !!user.isTwoFactorEnabled,
+      remainingBackupCodes: remainingCount,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error checking backup codes' });
   }
 });
 
