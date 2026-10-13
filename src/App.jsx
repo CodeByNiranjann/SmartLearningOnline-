@@ -7,6 +7,7 @@ import StudentLayout from './layouts/StudentLayout';
 // Pages
 import Login from './pages/Login';
 import Register from './pages/Register';
+import Verify2FA from './pages/Verify2FA';
 import Dashboard from './pages/Dashboard';
 import Courses from './pages/Courses';
 import CourseDetails from './pages/CourseDetails';
@@ -22,6 +23,7 @@ function App() {
           {/* Public Auth Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-2fa" element={<Verify2FA />} />
 
           {/* Student Layout with Navbar */}
           <Route element={<StudentLayout />}>

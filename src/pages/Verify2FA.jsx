@@ -1,0 +1,293 @@
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { verify2FALogin } from '../services/api';
+import {
+  ShieldCheck,
+  KeyRound,
+  ArrowRight,
+  ArrowLeft,
+  AlertCircle,
+  HelpCircle,
+  Lock,
+  Smartphone,
+  RefreshCw,
+} from 'lucide-react';
+
+const Verify2FA = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { complete2FALogin } = useAuth();
+
+  // Retrieve state passed from Login page
+  const challengeData = location.state || {};
+  const { tempToken, email, name } = challengeData;
+
+  const [otpDigits, setOtpDigits] = useState(['', '', '', '', '', '']);
+  const [useBackupCode, setUseBackupCode] = useState(false);
+  const [backupCode, setBackupCode] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const inputRefs = useRef([]);
+
+  // Redirect to login if user arrived without a challenge token
+  useEffect(() => {
+    if (!tempToken) {
+      navigate('/login', { replace: true });
+    }
+  }, [tempToken, navigate]);
+
+  // Focus the first input on mount
+  useEffect(() => {
+    if (!useBackupCode && inputRefs.current[0]) {
+      inputRefs.current[0].focus();
+    }
+  }, [useBackupCode]);
+
+  // Handle individual digit change
+  const handleDigitChange = (index, value) => {
+    // Check if user pasted multi-digit text
+    if (value.length > 1) {
+      handlePaste(value);
+      return;
+    }
+
+    // Only allow alphanumeric / digits
+    const cleaned = value.replace(/[^0-9a-zA-Z]/g, '');
+    const updated = [...otpDigits];
+    updated[index] = cleaned;
+    setOtpDigits(updated);
+    if (error) setError('');
+
+    // Advance focus
+    if (cleaned && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  };
+
+  const handleKeyDown = (index, e) => {
+    if (e.key === 'Backspace' && !otpDigits[index] && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (pastedText) => {
+    const cleaned = pastedText.replace(/[^0-9a-zA-Z]/g, '').slice(0, 6);
+    if (!cleaned) return;
+    const updated = ['', '', '', '', '', ''];
+    for (let i = 0; i < cleaned.length; i++) {
+      updated[i] = cleaned[i];
+    }
+    setOtpDigits(updated);
+    const nextIdx = Math.min(cleaned.length, 5);
+    inputRefs.current[nextIdx]?.focus();
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    const codeToVerify = useBackupCode
+      ? backupCode.trim()
+      : otpDigits.join('');
+
+    if (!codeToVerify) {
+      setError(
+        useBackupCode
+          ? 'Please enter your 8-character backup code.'
+          : 'Please enter all 6 digits of your authenticator code.'
+      );
+      return;
+    }
+
+    if (!useBackupCode && codeToVerify.length < 6) {
+      setError('Please provide the full 6-digit verification code.');
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError('');
+      const response = await verify2FALogin(tempToken, codeToVerify);
+      complete2FALogin(response);
+      navigate('/dashboard', { replace: true });
+    } catch (err) {
+      console.error('2FA error:', err);
+      const msg =
+        err.response?.data?.message ||
+        'The verification code you entered is invalid or has expired.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F8FAFC] flex flex-col justify-center py-12 px-4 sm:px-6 lg:px-8 font-sans selection:bg-blue-600 selection:text-white">
+      {/* Background Decorative Accents */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -top-40 -right-40 w-96 h-96 rounded-full bg-blue-100/50 blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full bg-indigo-100/40 blur-3xl" />
+      </div>
+
+      <div className="sm:mx-auto sm:w-full sm:max-w-md relative z-10">
+        {/* LearnHub Header Brand */}
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center gap-2.5 group mb-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shadow-md shadow-blue-500/20 group-hover:bg-blue-700 transition-colors">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <span className="text-2xl font-bold text-slate-900 tracking-tight">
+              LearnHub
+            </span>
+          </Link>
+          <h2 className="text-2xl font-bold text-slate-900 tracking-tight">
+            Two-Factor Authentication
+          </h2>
+          <p className="mt-2 text-sm text-slate-500">
+            {useBackupCode
+              ? 'Enter one of your 8-character emergency backup codes.'
+              : `Enter the 6-digit code generated by your Authenticator app for ${email || 'your account'}.`}
+          </p>
+        </div>
+
+        {/* Card Container */}
+        <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.06)] border border-slate-200/80">
+          {error && (
+            <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-700 text-sm animate-in fade-in">
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {!useBackupCode ? (
+              /* 6-Digit OTP Boxes (Figma Separated Pages Design) */
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider text-center mb-3">
+                  Verification Code
+                </label>
+                <div
+                  className="flex items-center justify-center gap-2 sm:gap-3"
+                  onPaste={(e) => {
+                    e.preventDefault();
+                    handlePaste(e.clipboardData.getData('text'));
+                  }}
+                >
+                  {otpDigits.map((digit, idx) => (
+                    <input
+                      key={idx}
+                      ref={(el) => (inputRefs.current[idx] = el)}
+                      type="text"
+                      inputMode="numeric"
+                      maxLength={1}
+                      value={digit}
+                      onChange={(e) => handleDigitChange(idx, e.target.value)}
+                      onKeyDown={(e) => handleKeyDown(idx, e)}
+                      className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl font-bold rounded-xl border transition-all duration-150 focus:outline-none ${
+                        digit
+                          ? 'border-blue-600 bg-blue-50/40 text-blue-900 ring-2 ring-blue-500/20'
+                          : 'border-slate-300 bg-slate-50/50 text-slate-800 hover:border-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <div className="mt-3 flex items-center justify-center gap-1.5 text-xs text-slate-400">
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Google Authenticator, Authy, or 1Password</span>
+                </div>
+              </div>
+            ) : (
+              /* Backup Code Input Alternative */
+              <div>
+                <label className="block text-xs font-semibold text-slate-600 uppercase tracking-wider mb-2">
+                  Emergency Backup Code
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <KeyRound className="w-5 h-5" />
+                  </div>
+                  <input
+                    type="text"
+                    value={backupCode}
+                    onChange={(e) => {
+                      setBackupCode(e.target.value);
+                      if (error) setError('');
+                    }}
+                    placeholder="e.g. A1B2-C3D4"
+                    className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent font-mono uppercase tracking-wider text-sm transition-all"
+                    autoFocus
+                  />
+                </div>
+                <p className="mt-2 text-xs text-slate-400">
+                  Backup codes are single-use codes provided when you enabled 2FA.
+                </p>
+              </div>
+            )}
+
+            {/* Primary Action Button */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-lg shadow-blue-600/20 transition-all duration-200 flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
+            >
+              {loading ? (
+                <>
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  <span>Verifying Code...</span>
+                </>
+              ) : (
+                <>
+                  <span>Verify and Sign In</span>
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Toggle between Authenticator Code & Backup Code */}
+          <div className="mt-6 pt-6 border-t border-slate-100 flex flex-col gap-3 text-center text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                setUseBackupCode(!useBackupCode);
+                setError('');
+              }}
+              className="font-medium text-blue-600 hover:text-blue-700 transition-colors inline-flex items-center justify-center gap-1.5 cursor-pointer"
+            >
+              {useBackupCode ? (
+                <>
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Use Authenticator App code instead</span>
+                </>
+              ) : (
+                <>
+                  <KeyRound className="w-3.5 h-3.5" />
+                  <span>Lost access to authenticator? Use backup code</span>
+                </>
+              )}
+            </button>
+
+            <Link
+              to="/login"
+              className="text-slate-500 hover:text-slate-700 inline-flex items-center justify-center gap-1.5 transition-colors"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              <span>Back to standard login</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* Security Help Footer */}
+        <div className="mt-6 text-center">
+          <p className="text-xs text-slate-400 flex items-center justify-center gap-1.5">
+            <Lock className="w-3.5 h-3.5" />
+            <span>Protected by LearnHub End-to-End Two-Factor Verification</span>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Verify2FA;

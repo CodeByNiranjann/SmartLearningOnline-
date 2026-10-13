@@ -4,8 +4,8 @@ import Navbar from '../components/Navbar';
 
 const StudentLayout = () => {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
-      {/* Top Navigation */}
+    <div className="min-h-screen bg-[#F8FAFC] text-slate-800 flex flex-col font-sans selection:bg-blue-600 selection:text-white">
+      {/* Top Navigation Bar */}
       <Navbar />
 
       {/* Main Content Area */}
@@ -13,14 +13,15 @@ const StudentLayout = () => {
         <Outlet />
       </main>
 
-      {/* Footer */}
-      <footer className="bg-slate-900/80 border-t border-slate-800/80 py-6 mt-12">
+      {/* LearnHub Footer */}
+      <footer className="bg-white border-t border-slate-200/80 py-8 mt-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <p>© {new Date().getFullYear()} LearningHub Student Platform. All rights reserved.</p>
-          <div className="flex items-center gap-6">
-            <span className="hover:text-slate-300 transition-colors cursor-pointer">Privacy Policy</span>
-            <span className="hover:text-slate-300 transition-colors cursor-pointer">Terms of Service</span>
-            <span className="hover:text-slate-300 transition-colors cursor-pointer">Help & Support</span>
+          <p>© {new Date().getFullYear()} LearnHub Education Inc. All rights reserved.</p>
+          <div className="flex items-center gap-6 font-medium">
+            <span className="hover:text-blue-600 transition-colors cursor-pointer">Privacy Policy</span>
+            <span className="hover:text-blue-600 transition-colors cursor-pointer">Terms of Service</span>
+            <span className="hover:text-blue-600 transition-colors cursor-pointer">Security & 2FA</span>
+            <span className="hover:text-blue-600 transition-colors cursor-pointer">Help & Support</span>
           </div>
         </div>
       </footer>
