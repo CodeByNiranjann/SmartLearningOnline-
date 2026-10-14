@@ -68,8 +68,8 @@ const Lesson = () => {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-sm font-medium text-slate-400">Loading lesson workspace...</p>
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <p className="text-sm font-medium text-slate-500">Loading lesson workspace...</p>
         </div>
       </div>
     );
@@ -77,13 +77,13 @@ const Lesson = () => {
 
   if (error || !lessonData?.lesson) {
     return (
-      <div className="bg-rose-500/10 border border-rose-500/30 p-8 rounded-2xl text-center space-y-4 max-w-lg mx-auto my-12">
-        <AlertCircle className="w-10 h-10 text-rose-400 mx-auto" />
-        <h3 className="text-lg font-bold text-white">Lesson Not Found</h3>
-        <p className="text-sm text-slate-400">{error || 'The requested lesson is unavailable.'}</p>
+      <div className="bg-rose-50 border border-rose-200 p-8 rounded-2xl text-center space-y-4 max-w-lg mx-auto my-12 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+        <AlertCircle className="w-10 h-10 text-rose-600 mx-auto" />
+        <h3 className="text-lg font-bold text-slate-900">Lesson Not Found</h3>
+        <p className="text-sm text-slate-600">{error || 'The requested lesson is unavailable.'}</p>
         <Link
           to={`/courses/${courseId}`}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-xs hover:bg-indigo-500"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-md shadow-blue-500/20 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Course Path
         </Link>
@@ -94,31 +94,31 @@ const Lesson = () => {
   const { lesson, prevLessonId, nextLessonId, totalCourseLessons, currentLessonIndex } = lessonData;
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 font-sans">
       {/* Top Navigation */}
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+      <div className="flex items-center justify-between border-b border-slate-200/80 pb-4">
         <Link
           to={`/courses/${courseId}`}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition-colors"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-600 hover:text-blue-600 transition-colors"
         >
           <ArrowLeft className="w-4 h-4" /> Back to Learning Path
         </Link>
-        <span className="text-xs text-slate-400 font-medium">
+        <span className="text-xs text-slate-500 font-medium">
           Lesson {currentLessonIndex} of {totalCourseLessons}
         </span>
       </div>
 
       {/* Success Notification Banner */}
       {successMsg && (
-        <div className="p-4 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-between gap-3 text-emerald-300 text-sm animate-fade-in shadow-lg">
+        <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-between gap-3 text-emerald-800 text-sm animate-fade-in shadow-sm">
           <div className="flex items-center gap-2.5">
-            <CheckCircle className="w-5 h-5 text-emerald-400" />
+            <CheckCircle className="w-5 h-5 text-emerald-600" />
             <span className="font-semibold">{successMsg}</span>
           </div>
           {nextLessonId && (
             <Link
               to={`/learning/${courseId}/${nextLessonId}`}
-              className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-colors flex items-center gap-1"
+              className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors flex items-center gap-1 shadow-sm"
             >
               Next Lesson <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -130,43 +130,43 @@ const Lesson = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left 2 Cols: Lesson Content */}
         <div className="lg:col-span-2 space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 md:p-8 space-y-6 shadow-2xl">
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
             {/* Header */}
-            <div className="space-y-2 border-b border-slate-800 pb-6">
+            <div className="space-y-2 border-b border-slate-100 pb-6">
               <div className="flex items-center justify-between gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">
+                <span className="text-xs font-bold uppercase tracking-wider text-blue-600">
                   Lesson {currentLessonIndex}
                 </span>
                 {isCompleted && (
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                  <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                     <CheckCircle className="w-3.5 h-3.5" /> Completed
                   </span>
                 )}
               </div>
-              <h1 className="text-2xl md:text-3xl font-extrabold text-white">{lesson.title}</h1>
+              <h1 className="text-2xl md:text-3xl font-extrabold text-slate-900 tracking-tight">{lesson.title}</h1>
               {lesson.description && (
-                <p className="text-slate-400 text-sm leading-relaxed">{lesson.description}</p>
+                <p className="text-slate-500 text-sm leading-relaxed">{lesson.description}</p>
               )}
             </div>
 
             {/* Formatted Text Content */}
-            <div className="prose prose-invert max-w-none text-slate-200 text-sm md:text-base leading-relaxed space-y-4">
+            <div className="max-w-none text-slate-700 text-sm md:text-base leading-relaxed space-y-4">
               {lesson.content.split('\n\n').map((paragraph, idx) => (
-                <div key={idx} className="bg-slate-800/40 p-4 rounded-xl border border-slate-700/50 whitespace-pre-wrap font-mono text-xs md:text-sm text-slate-300">
+                <div key={idx} className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80 whitespace-pre-wrap font-mono text-xs md:text-sm text-slate-800">
                   {paragraph}
                 </div>
               ))}
             </div>
 
             {/* Action Buttons Bar */}
-            <div className="pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <button
                 onClick={handleMarkComplete}
                 disabled={completing || isCompleted}
                 className={`w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all duration-200 shadow-md ${
                   isCompleted
-                    ? 'bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 cursor-default'
-                    : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-emerald-600/20 cursor-pointer'
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 cursor-default'
+                    : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-500/20 cursor-pointer'
                 }`}
               >
                 <CheckCircle className="w-4 h-4" />
@@ -177,12 +177,12 @@ const Lesson = () => {
                 {prevLessonId ? (
                   <Link
                     to={`/learning/${courseId}/${prevLessonId}`}
-                    className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
+                    className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-200/60"
                   >
                     <ArrowLeft className="w-4 h-4" /> Previous
                   </Link>
                 ) : (
-                  <span className="px-4 py-2.5 rounded-xl bg-slate-900/50 text-slate-600 text-xs font-semibold cursor-not-allowed border border-slate-800">
+                  <span className="px-4 py-2.5 rounded-xl bg-slate-50 text-slate-400 text-xs font-semibold cursor-not-allowed border border-slate-200/60">
                     Previous
                   </span>
                 )}
@@ -190,14 +190,14 @@ const Lesson = () => {
                 {nextLessonId ? (
                   <Link
                     to={`/learning/${courseId}/${nextLessonId}`}
-                    className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-md"
+                    className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-md shadow-blue-500/20"
                   >
                     Next <ArrowRight className="w-4 h-4" />
                   </Link>
                 ) : (
                   <Link
                     to={`/courses/${courseId}`}
-                    className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors"
+                    className="px-4 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-md shadow-purple-500/20"
                   >
                     Finish Course <Sparkles className="w-4 h-4" />
                   </Link>
@@ -209,22 +209,22 @@ const Lesson = () => {
 
         {/* Right 1 Col: Learning Resources */}
         <div className="space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 space-y-4 shadow-xl">
+          <div className="bg-white border border-slate-200/80 rounded-3xl p-6 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <BookOpen className="w-5 h-5 text-indigo-400" />
+              <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <BookOpen className="w-5 h-5 text-blue-600" />
                 Learning Resources
               </h3>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 font-semibold border border-slate-700">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold border border-slate-200">
                 {resources.length} Available
               </span>
             </div>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-slate-500">
               Curated documentation, videos, PDFs, and repository links for this lesson.
             </p>
 
             {resources.length === 0 ? (
-              <div className="p-6 text-center text-xs text-slate-500 bg-slate-800/40 rounded-xl border border-slate-800">
+              <div className="p-6 text-center text-xs text-slate-500 bg-slate-50 rounded-2xl border border-slate-200/80">
                 No external resources attached to this lesson.
               </div>
             ) : (

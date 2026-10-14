@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, LogOut, User, Menu, X, LayoutDashboard, Compass, GraduationCap, ShieldCheck } from 'lucide-react';
+import { BookOpen, LogOut, User, Menu, X, LayoutDashboard, Compass, GraduationCap, ShieldCheck, Settings, Sparkles } from 'lucide-react';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -19,6 +19,17 @@ const Navbar = () => {
     { name: 'Courses', path: '/courses', icon: Compass, protected: false },
     { name: 'My Learning', path: '/my-learning', icon: GraduationCap, protected: true },
     { name: 'Profile & 2FA', path: '/profile', icon: User, protected: true },
+    // Management links — only Admin has Manage Settings; Instructors have Instructor Hub
+    ...(user?.role === 'admin'
+      ? [
+          { name: 'Admin Console', path: '/admin/dashboard', icon: ShieldCheck, protected: true },
+          { name: 'Manage Settings', path: '/admin/settings', icon: Settings, protected: true },
+        ]
+      : user?.role === 'instructor'
+      ? [
+          { name: 'Instructor Hub', path: '/instructor/dashboard', icon: Sparkles, protected: true },
+        ]
+      : []),
   ];
 
   const isActive = (path) => location.pathname === path;

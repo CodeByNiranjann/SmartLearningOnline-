@@ -6,27 +6,27 @@ const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLe
   let isPreviousLessonCompleted = true; // First lesson is always unlocked
 
   return (
-    <div className="space-y-8 relative before:absolute before:left-6 before:top-4 before:bottom-4 before:w-0.5 before:bg-slate-700/60">
+    <div className="space-y-8 relative before:absolute before:left-6 before:top-4 before:bottom-4 before:w-0.5 before:bg-slate-200">
       {modules.map((module, modIndex) => (
         <div key={module._id} className="relative pl-12 space-y-4">
           {/* Module Node Indicator */}
-          <div className="absolute left-3.5 top-0 -translate-x-1/2 w-6 h-6 rounded-full bg-slate-900 border-2 border-indigo-500 flex items-center justify-center shadow-md">
-            <span className="text-[10px] font-bold text-indigo-400">{modIndex + 1}</span>
+          <div className="absolute left-3.5 top-0 -translate-x-1/2 w-6 h-6 rounded-full bg-white border-2 border-blue-600 flex items-center justify-center shadow-md">
+            <span className="text-[10px] font-bold text-blue-600">{modIndex + 1}</span>
           </div>
 
           {/* Module Header Card */}
-          <div className="bg-slate-800/90 rounded-2xl p-5 border border-slate-700 shadow-md">
+          <div className="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <span className="text-xs font-semibold uppercase tracking-wider text-indigo-400">
+                <span className="text-xs font-semibold uppercase tracking-wider text-blue-600">
                   Module {modIndex + 1}
                 </span>
-                <h3 className="text-lg font-bold text-white mt-0.5">{module.title}</h3>
+                <h3 className="text-lg font-bold text-slate-900 mt-0.5">{module.title}</h3>
                 {module.description && (
-                  <p className="text-sm text-slate-400 mt-1 leading-relaxed">{module.description}</p>
+                  <p className="text-sm text-slate-500 mt-1 leading-relaxed">{module.description}</p>
                 )}
               </div>
-              <span className="px-3 py-1 rounded-full text-xs font-medium bg-slate-700/60 text-slate-300 whitespace-nowrap">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 whitespace-nowrap">
                 {module.lessons ? module.lessons.length : 0} Lessons
               </span>
             </div>
@@ -48,25 +48,25 @@ const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLe
                     key={lesson._id}
                     className={`group rounded-xl p-4 border transition-all duration-200 flex items-center justify-between gap-4 ${
                       isCurrent
-                        ? 'bg-indigo-600/15 border-indigo-500/60 shadow-lg shadow-indigo-500/10'
+                        ? 'bg-blue-50/70 border-blue-300 shadow-sm'
                         : isCompleted
-                        ? 'bg-slate-800/60 border-emerald-500/30 hover:border-emerald-500/50'
+                        ? 'bg-white border-emerald-200 hover:border-emerald-300 shadow-[0_2px_10px_rgba(0,0,0,0.02)]'
                         : isUnlocked
-                        ? 'bg-slate-800/40 border-slate-700 hover:border-slate-600'
-                        : 'bg-slate-900/40 border-slate-800/80 opacity-60'
+                        ? 'bg-white border-slate-200/80 hover:border-blue-300 hover:shadow-sm'
+                        : 'bg-slate-50 border-slate-200/60 opacity-60'
                     }`}
                   >
                     <div className="flex items-center gap-3.5 flex-1 min-w-0">
                       {/* Lesson Icon */}
                       <div className="flex-shrink-0">
                         {isCompleted ? (
-                          <CheckCircle className="w-5 h-5 text-emerald-400" />
+                          <CheckCircle className="w-5 h-5 text-emerald-600" />
                         ) : isCurrent ? (
-                          <PlayCircle className="w-5 h-5 text-indigo-400 animate-pulse" />
+                          <PlayCircle className="w-5 h-5 text-blue-600 animate-pulse" />
                         ) : isUnlocked ? (
-                          <BookOpen className="w-5 h-5 text-slate-400 group-hover:text-indigo-300" />
+                          <BookOpen className="w-5 h-5 text-slate-400 group-hover:text-blue-600" />
                         ) : (
-                          <Lock className="w-5 h-5 text-slate-500" />
+                          <Lock className="w-5 h-5 text-slate-400" />
                         )}
                       </div>
 
@@ -79,19 +79,19 @@ const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLe
                           <h4
                             className={`text-sm font-semibold truncate ${
                               isCurrent
-                                ? 'text-indigo-300 font-bold'
+                                ? 'text-blue-700 font-bold'
                                 : isCompleted
-                                ? 'text-slate-200'
+                                ? 'text-slate-800'
                                 : isUnlocked
-                                ? 'text-slate-300 group-hover:text-white'
-                                : 'text-slate-500'
+                                ? 'text-slate-700 group-hover:text-slate-900'
+                                : 'text-slate-400'
                             }`}
                           >
                             {lesson.title}
                           </h4>
                         </div>
                         {lesson.description && (
-                          <p className="text-xs text-slate-400 truncate mt-0.5">{lesson.description}</p>
+                          <p className="text-xs text-slate-500 truncate mt-0.5">{lesson.description}</p>
                         )}
                       </div>
                     </div>
@@ -103,17 +103,17 @@ const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLe
                           to={`/learning/${courseId}/${lesson._id}`}
                           className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all ${
                             isCurrent
-                              ? 'bg-indigo-600 text-white hover:bg-indigo-500 shadow-md'
+                              ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md shadow-blue-500/20'
                               : isCompleted
-                              ? 'bg-slate-700/60 text-slate-300 hover:bg-slate-700 hover:text-white'
-                              : 'bg-slate-800 text-slate-300 hover:bg-indigo-600 hover:text-white'
+                              ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                              : 'bg-slate-100 text-slate-700 hover:bg-blue-600 hover:text-white'
                           }`}
                         >
                           <span>{isCurrent ? 'Continue' : isCompleted ? 'Review' : 'Start'}</span>
                           <ArrowRight className="w-3.5 h-3.5" />
                         </Link>
                       ) : (
-                        <span className="px-3 py-1 rounded-lg text-xs font-medium bg-slate-800/80 text-slate-500 flex items-center gap-1">
+                        <span className="px-3 py-1 rounded-lg text-xs font-medium bg-slate-100 text-slate-400 flex items-center gap-1">
                           <Lock className="w-3 h-3" /> Locked
                         </span>
                       )}

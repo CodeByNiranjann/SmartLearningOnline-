@@ -18,7 +18,7 @@ const moduleSchema = new mongoose.Schema({
     required: true,
     default: 1,
   },
-});
+}, { timestamps: true });
 
 moduleSchema.index({ courseId: 1, order: 1 });
 

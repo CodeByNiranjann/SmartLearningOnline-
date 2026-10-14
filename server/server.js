@@ -8,6 +8,8 @@ import courseRoutes from './routes/courseRoutes.js';
 import moduleRoutes from './routes/moduleRoutes.js';
 import lessonRoutes from './routes/lessonRoutes.js';
 import progressRoutes from './routes/progressRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
+import instructorRoutes from './routes/instructorRoutes.js';
 
 dotenv.config();
 
@@ -27,6 +29,8 @@ app.use('/api/courses', courseRoutes);
 app.use('/api/modules', moduleRoutes);
 app.use('/api/lessons', lessonRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/instructor', instructorRoutes);
 
 app.get('/', (req, res) => {
   res.send('Student Learning Platform API is running');

@@ -100,6 +100,75 @@ export const fetchCourseModules = async (courseId) => {
   return response.data;
 };
 
+// Student Course Enrollment
+export const enrollInCourse = async (courseId) => {
+  const response = await api.post(`/courses/${courseId}/enroll`);
+  return response.data;
+};
+
+export const fetchEnrollmentStatus = async (courseId) => {
+  const response = await api.get(`/courses/${courseId}/enrollment-status`);
+  return response.data;
+};
+
+export const unenrollCourse = async (courseId) => {
+  const response = await api.delete(`/courses/${courseId}/enroll`);
+  return response.data;
+};
+
+// ─── Course CRUD (instructor / admin) ────────────────────────────────────────
+export const fetchMyCourses = async (instructorId) => {
+  const response = await api.get('/courses', { params: { instructor_id: instructorId } });
+  return response.data;
+};
+
+export const createCourse = async (courseData) => {
+  const response = await api.post('/courses', courseData);
+  return response.data;
+};
+
+export const updateCourse = async (courseId, courseData) => {
+  const response = await api.put(`/courses/${courseId}`, courseData);
+  return response.data;
+};
+
+export const deleteCourse = async (courseId) => {
+  const response = await api.delete(`/courses/${courseId}`);
+  return response.data;
+};
+
+// ─── Module CRUD (instructor / admin) ─────────────────────────────────────────
+export const createModule = async (courseId, moduleData) => {
+  const response = await api.post(`/courses/${courseId}/modules`, moduleData);
+  return response.data;
+};
+
+export const updateModule = async (moduleId, moduleData) => {
+  const response = await api.put(`/modules/${moduleId}`, moduleData);
+  return response.data;
+};
+
+export const deleteModule = async (moduleId) => {
+  const response = await api.delete(`/modules/${moduleId}`);
+  return response.data;
+};
+
+// ─── Lesson CRUD (instructor / admin) ─────────────────────────────────────────
+export const createLesson = async (moduleId, lessonData) => {
+  const response = await api.post(`/modules/${moduleId}/lessons`, lessonData);
+  return response.data;
+};
+
+export const updateLesson = async (lessonId, lessonData) => {
+  const response = await api.put(`/lessons/${lessonId}`, lessonData);
+  return response.data;
+};
+
+export const deleteLesson = async (lessonId) => {
+  const response = await api.delete(`/lessons/${lessonId}`);
+  return response.data;
+};
+
 // Lesson & Resource Services
 export const fetchLessonDetails = async (lessonId) => {
   const response = await api.get(`/lessons/${lessonId}`);
@@ -127,4 +196,63 @@ export const completeLesson = async (courseId, lessonId) => {
   return response.data;
 };
 
+// ─── Admin Services ──────────────────────────────────────────────────────────
+export const fetchAdminStats = async () => {
+  const response = await api.get('/admin/stats');
+  return response.data;
+};
+
+export const fetchAdminUsers = async (params = {}) => {
+  const response = await api.get('/admin/users', { params });
+  return response.data;
+};
+
+export const createInstructor = async (instructorData) => {
+  const response = await api.post('/admin/instructors', instructorData);
+  return response.data;
+};
+
+export const updateUserRole = async (userId, role) => {
+  const response = await api.put(`/admin/users/${userId}/role`, { role });
+  return response.data;
+};
+
+export const deleteUser = async (userId) => {
+  const response = await api.delete(`/admin/users/${userId}`);
+  return response.data;
+};
+
+export const fetchAdminReports = async () => {
+  const response = await api.get('/admin/reports');
+  return response.data;
+};
+
+// ─── Instructor Services ─────────────────────────────────────────────────────
+export const fetchInstructorStats = async () => {
+  const response = await api.get('/instructor/stats');
+  return response.data;
+};
+
+export const fetchInstructorStudents = async () => {
+  const response = await api.get('/instructor/students');
+  return response.data;
+};
+
+export const fetchInstructorReports = async () => {
+  const response = await api.get('/instructor/reports');
+  return response.data;
+};
+
+// ─── Cross-Course Modules & Lessons ──────────────────────────────────────────
+export const fetchAllModules = async () => {
+  const response = await api.get('/modules');
+  return response.data;
+};
+
+export const fetchAllLessons = async () => {
+  const response = await api.get('/lessons');
+  return response.data;
+};
+
 export default api;
+

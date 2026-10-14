@@ -47,7 +47,15 @@ const Login = () => {
         return;
       }
 
-      navigate('/dashboard');
+      // Role-based redirect after successful login
+      const role = result?.user?.role;
+      if (role === 'admin') {
+        navigate('/admin/dashboard');
+      } else if (role === 'instructor') {
+        navigate('/instructor/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       console.error('Login error:', err);
       const serverMessage =
