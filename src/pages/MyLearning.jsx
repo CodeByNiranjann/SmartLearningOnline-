@@ -34,31 +34,31 @@ const MyLearning = () => {
   });
 
   return (
-    <div className="space-y-8">
-      {/* Header Banner */}
-      <div className="relative rounded-3xl bg-slate-900 border border-slate-800 p-8 overflow-hidden shadow-2xl">
+    <div className="space-y-8 font-sans">
+      {/* Header Banner (Matching LearnHub Theme) */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-8 md:p-10 text-white overflow-hidden shadow-xl shadow-blue-600/10">
         <div className="relative z-10 space-y-3 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 text-xs font-semibold">
-            <GraduationCap className="w-4 h-4" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider">
+            <GraduationCap className="w-3.5 h-3.5" />
             <span>My Learning Portal</span>
           </div>
-          <h1 className="text-3xl font-extrabold text-white tracking-tight">Your Enrolled Courses</h1>
-          <p className="text-sm text-slate-400 leading-relaxed">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">Your Enrolled Courses</h1>
+          <p className="text-blue-100 text-sm md:text-base leading-relaxed">
             Keep track of your active learning progress, resume remaining modules, and achieve course completion certificates.
           </p>
         </div>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-800 pb-3">
+      <div className="bg-white p-2 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] inline-flex items-center gap-2">
         {['All', 'InProgress', 'Completed'].map((tab) => (
           <button
             key={tab}
             onClick={() => setFilter(tab)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
               filter === tab
-                ? 'bg-indigo-600 text-white shadow-md'
-                : 'bg-slate-800/60 text-slate-400 hover:bg-slate-800 hover:text-white'
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
             }`}
           >
             {tab === 'All' ? 'All Courses' : tab === 'InProgress' ? 'In Progress' : 'Completed'}
@@ -70,19 +70,23 @@ const MyLearning = () => {
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2].map((n) => (
-            <div key={n} className="h-52 bg-slate-900/60 rounded-2xl border border-slate-800 animate-pulse" />
+            <div key={n} className="h-52 bg-white rounded-2xl border border-slate-200/80 animate-pulse shadow-[0_4px_20px_rgba(0,0,0,0.03)]" />
           ))}
         </div>
       ) : filteredList.length === 0 ? (
-        <div className="bg-slate-900/60 border border-slate-800/80 p-12 rounded-2xl text-center space-y-3">
-          <Compass className="w-12 h-12 text-indigo-400 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No enrolled courses found</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
-            You have not started any courses in this filter view. Explore available courses to begin learning.
-          </p>
+        <div className="bg-white border border-slate-200/80 p-12 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.03)] text-center space-y-4">
+          <div className="w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mx-auto">
+            <Compass className="w-7 h-7" />
+          </div>
+          <div className="space-y-1">
+            <h3 className="text-lg font-bold text-slate-900">No enrolled courses found</h3>
+            <p className="text-sm text-slate-500 max-w-md mx-auto">
+              You have not started any courses in this filter view. Explore available courses to begin learning.
+            </p>
+          </div>
           <Link
             to="/courses"
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold text-xs hover:bg-indigo-500"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs shadow-md shadow-blue-500/20 transition-colors"
           >
             Browse Courses <ArrowRight className="w-4 h-4" />
           </Link>
@@ -97,43 +101,45 @@ const MyLearning = () => {
             return (
               <div
                 key={item._id}
-                className="bg-slate-900/90 rounded-2xl border border-slate-800 p-6 space-y-4 hover:border-slate-700 transition-all shadow-xl flex flex-col justify-between"
+                className="bg-white rounded-2xl border border-slate-200/80 p-6 space-y-4 hover:shadow-[0_8px_30px_rgba(0,0,0,0.08)] hover:border-blue-300 transition-all shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col justify-between"
               >
                 <div className="space-y-3">
                   <div className="flex items-start justify-between gap-3">
-                    <span className="text-xs font-semibold text-indigo-400 uppercase tracking-wider">
+                    <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                       {course.category}
                     </span>
                     {item.progressPercentage === 100 && (
-                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                      <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
                         <CheckCircle2 className="w-3.5 h-3.5" /> Completed
                       </span>
                     )}
                   </div>
 
-                  <h3 className="text-lg font-bold text-white line-clamp-1">{course.title}</h3>
-                  <p className="text-xs text-slate-400 line-clamp-2">{course.description}</p>
+                  <h3 className="text-lg font-bold text-slate-900 line-clamp-1">{course.title}</h3>
+                  <p className="text-xs text-slate-500 line-clamp-2 leading-relaxed">{course.description}</p>
 
-                  <ProgressBar percentage={item.progressPercentage} size="md" />
+                  <div className="pt-1">
+                    <ProgressBar percentage={item.progressPercentage} size="md" />
+                  </div>
 
                   {item.currentLesson && (
-                    <p className="text-xs text-slate-400 truncate">
-                      <span className="font-semibold text-slate-300">Current Lesson:</span> {item.currentLesson.title}
+                    <p className="text-xs text-slate-600 truncate bg-slate-50 px-3 py-2 rounded-xl border border-slate-200/60">
+                      <span className="font-semibold text-slate-800">Current Lesson:</span> {item.currentLesson.title}
                     </p>
                   )}
                 </div>
 
-                <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+                <div className="pt-4 border-t border-slate-100 flex items-center justify-between gap-3">
                   <Link
                     to={`/courses/${course._id}`}
-                    className="text-xs font-semibold text-slate-400 hover:text-white"
+                    className="text-xs font-semibold text-slate-600 hover:text-blue-600 transition-colors"
                   >
-                    View Modules
+                    View Curriculum
                   </Link>
 
                   <Link
                     to={nextLessonId ? `/learning/${course._id}/${nextLessonId}` : `/courses/${course._id}`}
-                    className="py-2.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold flex items-center gap-2 shadow-md transition-colors"
+                    className="py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-blue-500/20 transition-colors"
                   >
                     <Play className="w-3.5 h-3.5 fill-current" />
                     <span>{item.progressPercentage === 100 ? 'Review Course' : 'Continue Learning'}</span>

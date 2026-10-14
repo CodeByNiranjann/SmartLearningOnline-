@@ -11,7 +11,14 @@ const Courses = () => {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [difficultyFilter, setDifficultyFilter] = useState('All');
 
-  const categories = ['All', 'Web Development', 'Software Engineering', 'Computer Science'];
+  const [categories, setCategories] = useState([
+    'All',
+    'Web Development',
+    'Software Engineering',
+    'Computer Science',
+    'Data Science',
+    'Other',
+  ]);
   const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
   const loadCourses = async () => {
@@ -25,6 +32,11 @@ const Courses = () => {
 
       const data = await fetchCourses(params);
       setCourses(data);
+
+      if (data && data.length > 0) {
+        const distinct = Array.from(new Set(data.map((c) => c.category).filter(Boolean)));
+        setCategories((prev) => Array.from(new Set([...prev, ...distinct])));
+      }
     } catch (err) {
       console.error('Error loading courses:', err);
       setError('Failed to load courses from server. Please try again.');

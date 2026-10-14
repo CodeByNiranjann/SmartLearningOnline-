@@ -27,7 +27,7 @@ const lessonSchema = new mongoose.Schema({
     required: true,
     default: 1,
   },
-});
+}, { timestamps: true });
 
 lessonSchema.index({ moduleId: 1, order: 1 });
 lessonSchema.index({ courseId: 1 });
