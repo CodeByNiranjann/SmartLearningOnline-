@@ -88,7 +88,7 @@ const Register = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.06)] border border-slate-200/80">
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-700 text-sm">
+            <div role="alert" className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-700 text-sm">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600" />
               <span>{error}</span>
             </div>
@@ -97,7 +97,7 @@ const Register = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Full Name */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+              <label htmlFor="reg-name" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 Full Name
               </label>
               <div className="relative">
@@ -105,6 +105,7 @@ const Register = () => {
                   <User className="w-5 h-5" />
                 </div>
                 <input
+                  id="reg-name"
                   type="text"
                   name="name"
                   value={formData.name}
@@ -118,7 +119,7 @@ const Register = () => {
 
             {/* Email Address */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+              <label htmlFor="reg-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 Email Address
               </label>
               <div className="relative">
@@ -126,6 +127,7 @@ const Register = () => {
                   <Mail className="w-5 h-5" />
                 </div>
                 <input
+                  id="reg-email"
                   type="email"
                   name="email"
                   value={formData.email}
@@ -139,7 +141,7 @@ const Register = () => {
 
             {/* Password */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+              <label htmlFor="reg-password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 Password
               </label>
               <div className="relative">
@@ -147,6 +149,7 @@ const Register = () => {
                   <Lock className="w-5 h-5" />
                 </div>
                 <input
+                  id="reg-password"
                   type="password"
                   name="password"
                   value={formData.password}
@@ -160,7 +163,7 @@ const Register = () => {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+              <label htmlFor="reg-confirmPassword" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 Confirm Password
               </label>
               <div className="relative">
@@ -168,6 +171,7 @@ const Register = () => {
                   <Lock className="w-5 h-5" />
                 </div>
                 <input
+                  id="reg-confirmPassword"
                   type="password"
                   name="confirmPassword"
                   value={formData.confirmPassword}
