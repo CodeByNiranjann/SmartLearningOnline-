@@ -1,0 +1,53 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, master, balee, 'feature/**']
+  pull_request:
+    branches: [main, master, balee]
+
+jobs:
+  test-and-build:
+    name: Build & Test Suite
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo:7.0
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      PORT: 5002
+      TEST_PORT: 5002
+      MONGO_URI: mongodb://127.0.0.1:27017/online-learning-ci
+      JWT_SECRET: super_ci_test_secret_jwt_key_2026
+      CLIENT_URL: http://localhost:5173
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'npm'
+
+      - name: Install Client Dependencies
+        run: npm install
+
+      - name: Install Server Dependencies
+        run: npm --prefix server install
+
+      - name: Run Server API & Integration Tests
+        run: npm --prefix server test
+
+      - name: Run Client Production Build
+        run: npm run build

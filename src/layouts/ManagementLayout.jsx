@@ -75,8 +75,11 @@ const ManagementLayout = () => {
           </div>
         </Link>
         <button
+          type="button"
           onClick={() => setMobileOpen(!mobileOpen)}
-          className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 cursor-pointer"
+          aria-label="Toggle management navigation"
+          aria-expanded={mobileOpen}
+          className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer"
         >
           {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
         </button>
@@ -177,6 +180,7 @@ const ManagementLayout = () => {
             </div>
             <button
               onClick={handleLogout}
+              aria-label="Log out of management session"
               className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
               title="Logout"
             >

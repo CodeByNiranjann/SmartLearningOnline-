@@ -26,10 +26,14 @@ export const protect = async (req, res, next) => {
       process.env.JWT_SECRET || 'super_secret_slp_learning_jwt_key_2026'
     );
 
-    const activeSessionId = decoded.sessionId || sessionId;
+    const activeSessionId = sessionId || decoded.sessionId;
 
     if (!activeSessionId) {
       return res.status(401).json({ message: 'Session ID missing from authentication token' });
+    }
+
+    if (sessionId && decoded.sessionId && sessionId !== decoded.sessionId) {
+      return res.status(401).json({ message: 'Session ID mismatch between token and request header' });
     }
 
     // Verify session existence & validity in MongoDB

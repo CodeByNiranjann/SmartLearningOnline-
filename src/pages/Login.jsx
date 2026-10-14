@@ -93,7 +93,7 @@ const Login = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.06)] border border-slate-200/80">
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-700 text-sm">
+            <div role="alert" className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-700 text-sm">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600" />
               <span>{error}</span>
             </div>
@@ -102,7 +102,7 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Email Address */}
             <div>
-              <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+              <label htmlFor="login-email" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
                 Email Address
               </label>
               <div className="relative">
@@ -110,6 +110,7 @@ const Login = () => {
                   <Mail className="w-5 h-5" />
                 </div>
                 <input
+                  id="login-email"
                   type="email"
                   name="email"
                   value={formData.email}
@@ -124,7 +125,7 @@ const Login = () => {
             {/* Password */}
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                <label htmlFor="login-password" className="block text-xs font-semibold text-slate-700 uppercase tracking-wider">
                   Password
                 </label>
                 <a
@@ -143,6 +144,7 @@ const Login = () => {
                   <Lock className="w-5 h-5" />
                 </div>
                 <input
+                  id="login-password"
                   type="password"
                   name="password"
                   value={formData.password}

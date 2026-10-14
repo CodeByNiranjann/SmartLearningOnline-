@@ -6,7 +6,11 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
-    "seed": "node seed.js"
+    "seed": "node seed.js",
+    "test": "node test-runner.js",
+    "test:e2e": "node test-e2e.js",
+    "test:admin": "node test-admin-instructor.js",
+    "test:all": "node test-runner.js && node test-e2e.js && node test-admin-instructor.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

@@ -97,6 +97,7 @@ const Navbar = () => {
                 </Link>
                 <button
                   onClick={handleLogout}
+                  aria-label="Log out of account"
                   className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
                   title="Log out"
                 >
@@ -125,8 +126,11 @@ const Navbar = () => {
           {/* Mobile Hamburger Toggle */}
           <div className="md:hidden flex items-center">
             <button
+              type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100"
+              aria-label="Toggle navigation menu"
+              aria-expanded={mobileMenuOpen}
+              className="p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
             </button>
