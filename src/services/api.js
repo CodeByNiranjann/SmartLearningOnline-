@@ -285,5 +285,113 @@ export const submitQuiz = async (quizId, answers) => {
   return response.data;
 };
 
+// ─── Internship Project Services (SLP-15) ────────────────────────────────────
+export const fetchInternshipProjects = async (params = {}) => {
+  const response = await api.get('/internship-projects', { params });
+  return response.data;
+};
+
+export const fetchRecommendedProjects = async () => {
+  const response = await api.get('/internship-projects/recommended');
+  return response.data;
+};
+
+export const fetchProjectDetails = async (projectId) => {
+  const response = await api.get(`/internship-projects/${projectId}`);
+  return response.data;
+};
+
+export const startProject = async (projectId) => {
+  const response = await api.post(`/internship-projects/${projectId}/start`);
+  return response.data;
+};
+
+export const updateProjectProgress = async (projectId, progressData) => {
+  const response = await api.put(`/internship-projects/${projectId}/progress`, progressData);
+  return response.data;
+};
+
+export const fetchMyProjects = async () => {
+  const response = await api.get('/internship-projects/student/my-projects');
+  return response.data;
+};
+
+export const fetchProjectCategories = async () => {
+  try {
+    const response = await api.get('/internship-projects/meta/categories');
+    return response.data;
+  } catch (err) {
+    return { categories: [], skills: [] };
+  }
+};
+
+// ─── Coding Challenge Services (SLP-16) ───────────
+export const fetchCodingChallenges = async (params = {}) => {
+  const response = await api.get('/coding-challenges', { params });
+  return response.data;
+};
+
+export const fetchRecommendedChallenges = async () => {
+  const response = await api.get('/coding-challenges/recommended');
+  return response.data;
+};
+
+export const fetchCodingStats = async () => {
+  const response = await api.get('/coding-challenges/user-stats');
+  return response.data;
+};
+
+export const fetchChallengeDetails = async (id) => {
+  const response = await api.get(`/coding-challenges/${id}`);
+  return response.data;
+};
+
+export const submitChallengeCode = async (id, data) => {
+  const response = await api.post(`/coding-challenges/${id}/submit`, data);
+  return response.data;
+};
+
+export const fetchChallengeSolution = async (id) => {
+  const response = await api.get(`/coding-challenges/${id}/solution`);
+  return response.data;
+};
+
+export const fetchMyChallengeAttempts = async (id) => {
+  const response = await api.get(`/coding-challenges/${id}/my-attempts`);
+  return response.data;
+};
+
+// ─── Skill-Level Learning Services (SLP-14) ────────
+export const fetchSkillProfile = async () => {
+  const response = await api.get('/skill-learning/profile');
+  return response.data;
+};
+
+export const updateSkillProfile = async (profileData) => {
+  const response = await api.put('/skill-learning/profile', profileData);
+  return response.data;
+};
+
+export const fetchSkillAssessment = async () => {
+  const response = await api.get('/skill-learning/assessment');
+  return response.data;
+};
+
+export const submitSkillAssessment = async (assessmentData) => {
+  const response = await api.post('/skill-learning/assessment/submit', assessmentData);
+  return response.data;
+};
+
+export const fetchSkillActivities = async () => {
+  const response = await api.get('/skill-learning/activities');
+  return response.data;
+};
+
+// ─── Personalized Recommendations Services (SLP-13) ─
+export const fetchPersonalizedRecommendations = async () => {
+  const response = await api.get('/recommendations/personalized');
+  return response.data;
+};
+
 export default api;
 

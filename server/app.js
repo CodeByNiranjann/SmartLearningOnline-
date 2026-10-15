@@ -10,6 +10,10 @@ import progressRoutes from './routes/progressRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import instructorRoutes from './routes/instructorRoutes.js';
 import quizRoutes from './routes/quizRoutes.js';
+import internshipProjectRoutes from './routes/internshipProjectRoutes.js';
+import codingChallengeRoutes from './routes/codingChallengeRoutes.js';
+import skillLearningRoutes from './routes/skillLearningRoutes.js';
+import recommendationRoutes from './routes/recommendationRoutes.js';
 
 dotenv.config();
 
@@ -29,6 +33,10 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/instructor', instructorRoutes);
 app.use('/api/quizzes', quizRoutes);
+app.use('/api/internship-projects', internshipProjectRoutes);
+app.use('/api/coding-challenges', codingChallengeRoutes);
+app.use('/api/skill-learning', skillLearningRoutes);
+app.use('/api/recommendations', recommendationRoutes);
 
 // Health Check Endpoint (SLP-19)
 app.get('/health', (req, res) => {
