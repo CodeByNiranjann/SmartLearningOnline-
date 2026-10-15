@@ -9,7 +9,6 @@ import Quiz from './Quiz.js';
 import Review from './Review.js';
 import Certificate from './Certificate.js';
 import Session from './Session.js';
-import LearningActivity from './LearningActivity.js';
 
 export {
   User,
@@ -23,5 +22,5 @@ export {
   Review,
   Certificate,
   Session,
-  LearningActivity,
+
 };

@@ -16,6 +16,12 @@ import CourseDetails from './pages/CourseDetails';
 import Lesson from './pages/Lesson';
 import MyLearning from './pages/MyLearning';
 import Profile from './pages/Profile';
+import InternshipProjects from './pages/InternshipProjects';
+import ProjectDetails from './pages/ProjectDetails';
+import CodingChallenges from './pages/CodingChallenges';
+import ChallengeDetails from './pages/ChallengeDetails';
+import SkillLearning from './pages/SkillLearning';
+import SkillAssessment from './pages/SkillAssessment';
 
 // Instructor Management Pages
 import MyCourses from './pages/instructor/MyCourses';
@@ -82,10 +88,16 @@ function App() {
             {/* Public/Browsing Courses */}
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:courseId" element={<CourseDetails />} />
+            <Route path="/internship-projects" element={<InternshipProjects />} />
+            <Route path="/internship-projects/:projectId" element={<ProjectDetails />} />
+            <Route path="/coding-challenges" element={<CodingChallenges />} />
+            <Route path="/coding-challenges/:id" element={<ChallengeDetails />} />
 
             {/* Protected Student Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/skill-learning" element={<SkillLearning />} />
+              <Route path="/skill-assessment" element={<SkillAssessment />} />
               <Route path="/my-learning" element={<MyLearning />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/learning/:courseId/:lessonId" element={<Lesson />} />
