@@ -1,7 +1,6 @@
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
+import app from './app.js';
 import { connectDB } from './config/db.js';
+<<<<<<< HEAD
 
 import authRoutes from './routes/authRoutes.js';
 import courseRoutes from './routes/courseRoutes.js';
@@ -11,15 +10,18 @@ import progressRoutes from './routes/progressRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import instructorRoutes from './routes/instructorRoutes.js';
 import resourceRoutes from './routes/resourceRoutes.js';
+=======
+import dotenv from 'dotenv';
+>>>>>>> origin/main
 
 dotenv.config();
 
-const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Connect to MongoDB
 connectDB();
 
+<<<<<<< HEAD
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -45,5 +47,11 @@ app.use((err, req, res, next) => {
 });
 
 app.listen(PORT, () => {
+=======
+const server = app.listen(PORT, () => {
+>>>>>>> origin/main
   console.log(`Server running on port ${PORT}`);
 });
+
+export { app, server };
+export default app;

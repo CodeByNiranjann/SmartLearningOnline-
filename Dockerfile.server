@@ -1,0 +1,29 @@
+# Stage 1: Runtime
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Install curl for healthcheck
+RUN apk add --no-cache curl
+
+# Copy server package manifests
+COPY server/package*.json ./
+
+# Install production dependencies only
+RUN npm ci --only=production
+
+# Copy server application source
+COPY server/ ./
+
+# Expose API port
+EXPOSE 5000
+
+# Container Healthcheck (SLP-19)
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD curl -f http://localhost:5000/health || exit 1
+
+# Start server
+CMD ["node", "server.js"]

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+<<<<<<< HEAD
 import {
   fetchLessonDetails,
   fetchLessonResources,
@@ -50,6 +51,11 @@ const formatSeconds = (sec) => {
   const s = Math.floor(sec % 60);
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 };
+=======
+import { fetchLessonDetails, fetchLessonResources, completeLesson, fetchCourseProgress, fetchLessonQuiz, submitQuiz } from '../services/api';
+import ResourceCard from '../components/ResourceCard';
+import { CheckCircle, ArrowLeft, ArrowRight, BookOpen, Layers, Sparkles, AlertCircle, HelpCircle, Check, X, Award, RotateCcw } from 'lucide-react';
+>>>>>>> origin/main
 
 const Lesson = () => {
   const { courseId, lessonId } = useParams();
@@ -57,13 +63,22 @@ const Lesson = () => {
 
   const [lessonData, setLessonData] = useState(null);
   const [resources, setResources] = useState([]);
+<<<<<<< HEAD
   const [completedLessonIds, setCompletedLessonIds] = useState([]);
+=======
+  const [quiz, setQuiz] = useState(null);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizResult, setQuizResult] = useState(null);
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  const [quizError, setQuizError] = useState('');
+>>>>>>> origin/main
   const [isCompleted, setIsCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+<<<<<<< HEAD
   // Player & UI states
   const [theaterMode, setTheaterMode] = useState(false);
   const [activeTab, setActiveTab] = useState('curriculum'); // 'curriculum' | 'resources' | 'notes'
@@ -92,6 +107,27 @@ const Lesson = () => {
           return null;
         }),
       ]);
+=======
+  useEffect(() => {
+    const loadLessonData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+        setSuccessMsg('');
+        setQuizResult(null);
+        setQuizAnswers({});
+
+        const [details, resList, progressData, quizData] = await Promise.all([
+          fetchLessonDetails(lessonId),
+          fetchLessonResources(lessonId),
+          fetchCourseProgress(courseId),
+          fetchLessonQuiz(lessonId).catch(() => null),
+        ]);
+
+        setLessonData(details);
+        setResources(resList);
+        setQuiz(quizData);
+>>>>>>> origin/main
 
       setLessonData(details);
       setResources(resList || []);
@@ -140,6 +176,7 @@ const Lesson = () => {
     loadLessonData();
   }, [courseId, lessonId]);
 
+<<<<<<< HEAD
   // Track active study minutes on website for calendar heatmap
   useEffect(() => {
     if (notEnrolled || !courseId) return;
@@ -186,6 +223,52 @@ const Lesson = () => {
   }, [lessonData, resources]);
 
   // Handle Mark Lesson Complete (Idempotent and scoped to enrollment)
+=======
+  const handleQuizAnswerSelect = (questionId, optionIndex) => {
+    setQuizAnswers((prev) => ({
+      ...prev,
+      [questionId]: optionIndex,
+    }));
+  };
+
+  const handleSubmitQuiz = async (e) => {
+    e.preventDefault();
+    if (!quiz) return;
+
+    const formattedAnswers = Object.entries(quizAnswers).map(([qId, optIdx]) => ({
+      questionId: qId,
+      selectedOptionIndex: optIdx,
+    }));
+
+    if (formattedAnswers.length < quiz.questions.length) {
+      setQuizError('Please answer all questions before submitting.');
+      return;
+    }
+
+    try {
+      setSubmittingQuiz(true);
+      setQuizError('');
+      const result = await submitQuiz(quiz._id, formattedAnswers);
+      setQuizResult(result);
+      if (result.passed && !isCompleted) {
+        // Auto-mark lesson complete on passing quiz
+        handleMarkComplete();
+      }
+    } catch (err) {
+      console.error('Quiz submission error:', err);
+      setQuizError(err.response?.data?.message || 'Error grading quiz.');
+    } finally {
+      setSubmittingQuiz(false);
+    }
+  };
+
+  const handleRetakeQuiz = () => {
+    setQuizAnswers({});
+    setQuizResult(null);
+    setQuizError('');
+  };
+
+>>>>>>> origin/main
   const handleMarkComplete = async () => {
     try {
       setCompleting(true);
@@ -575,7 +658,187 @@ const Lesson = () => {
               </div>
             </div>
 
+<<<<<<< HEAD
             {/* ─── Bottom Actions Bar (Navigation & Completion) ─── */}
+=======
+            {/* ─── Knowledge Check Assessment (SLP-17 & SLP-18) ─── */}
+            {quiz && (
+              <div className="mt-8 pt-8 border-t border-slate-200/80 space-y-6">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center">
+                      <HelpCircle className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h2 className="text-base md:text-lg font-bold text-slate-900 tracking-tight">
+                        {quiz.title || 'Lesson Assessment'}
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Test your understanding to reinforce core concepts. Passing score: {quiz.passingScore}%
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    {quiz.questions?.length || 0} Questions
+                  </span>
+                </div>
+
+                {quizError && (
+                  <div role="alert" className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
+                    <span>{quizError}</span>
+                  </div>
+                )}
+
+                {!quizResult ? (
+                  /* Quiz Taking Form */
+                  <form onSubmit={handleSubmitQuiz} className="space-y-6">
+                    {quiz.questions.map((q, qIdx) => (
+                      <fieldset key={q._id || qIdx} className="p-4 md:p-5 rounded-2xl bg-slate-50/60 border border-slate-200/80 space-y-3">
+                        <legend className="text-xs md:text-sm font-bold text-slate-800 px-1">
+                          Question {qIdx + 1}: {q.questionText}
+                        </legend>
+                        <div role="radiogroup" aria-label={`Question ${qIdx + 1}`} className="space-y-2 pt-1">
+                          {q.options.map((opt, optIdx) => {
+                            const isSelected = quizAnswers[q._id] === optIdx;
+                            return (
+                              <label
+                                key={optIdx}
+                                className={`flex items-center gap-3 p-3 rounded-xl border text-xs md:text-sm cursor-pointer transition-all ${
+                                  isSelected
+                                    ? 'bg-blue-50/80 border-blue-400 text-blue-900 font-semibold shadow-xs'
+                                    : 'bg-white border-slate-200/80 text-slate-700 hover:bg-slate-100/60'
+                                }`}
+                              >
+                                <input
+                                  type="radio"
+                                  name={`question-${q._id}`}
+                                  value={optIdx}
+                                  checked={isSelected}
+                                  onChange={() => handleQuizAnswerSelect(q._id, optIdx)}
+                                  className="w-4 h-4 text-blue-600 border-slate-300 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                                />
+                                <span className="flex-1">{opt}</span>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      </fieldset>
+                    ))}
+
+                    <div className="flex items-center justify-between flex-wrap gap-3 pt-2">
+                      <span className="text-xs text-slate-500">
+                        {Object.keys(quizAnswers).length} of {quiz.questions.length} answered
+                      </span>
+                      <button
+                        type="submit"
+                        disabled={submittingQuiz}
+                        className="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-md shadow-indigo-500/20 disabled:opacity-60 flex items-center gap-2 cursor-pointer"
+                      >
+                        {submittingQuiz ? 'Grading...' : 'Submit Assessment'}
+                      </button>
+                    </div>
+                  </form>
+                ) : (
+                  /* Quiz Result View */
+                  <div className="space-y-6">
+                    <div
+                      className={`p-5 rounded-2xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+                        quizResult.passed
+                          ? 'bg-emerald-50/80 border-emerald-300 text-emerald-900'
+                          : 'bg-amber-50/80 border-amber-300 text-amber-900'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-white shadow-sm ${
+                            quizResult.passed ? 'bg-emerald-600' : 'bg-amber-600'
+                          }`}
+                        >
+                          <Award className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-extrabold text-lg">
+                              Score: {quizResult.score}%
+                            </span>
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                                quizResult.passed
+                                  ? 'bg-emerald-200 text-emerald-900'
+                                  : 'bg-amber-200 text-amber-900'
+                              }`}
+                            >
+                              {quizResult.passed ? 'Passed' : 'Needs Review'}
+                            </span>
+                          </div>
+                          <p className="text-xs opacity-90 mt-0.5">
+                            {quizResult.correctCount} of {quizResult.totalQuestions} questions correct (Passing: {quizResult.passingScore}%)
+                          </p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={handleRetakeQuiz}
+                        className="px-4 py-2 rounded-xl bg-white border border-slate-300/80 text-slate-700 hover:bg-slate-50 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                      >
+                        <RotateCcw className="w-3.5 h-3.5" /> Retake Assessment
+                      </button>
+                    </div>
+
+                    {/* Detailed Feedback Breakdown */}
+                    <div className="space-y-3">
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">
+                        Assessment Feedback & Explanations
+                      </h3>
+                      {quizResult.feedback?.map((item, idx) => (
+                        <div
+                          key={idx}
+                          className={`p-4 rounded-xl border text-xs space-y-2 ${
+                            item.isCorrect
+                              ? 'bg-emerald-50/40 border-emerald-200'
+                              : 'bg-rose-50/40 border-rose-200'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="font-bold text-slate-800">
+                              Q{idx + 1}: {item.questionText}
+                            </p>
+                            <span
+                              className={`shrink-0 flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                item.isCorrect
+                                  ? 'bg-emerald-100 text-emerald-800'
+                                  : 'bg-rose-100 text-rose-800'
+                              }`}
+                            >
+                              {item.isCorrect ? <Check className="w-3 h-3" /> : <X className="w-3 h-3" />}
+                              {item.isCorrect ? 'Correct' : 'Incorrect'}
+                            </span>
+                          </div>
+                          <p className="text-slate-600">
+                            <strong>Your Answer:</strong>{' '}
+                            {item.selectedOptionIndex !== null ? item.options[item.selectedOptionIndex] : 'Not answered'}
+                          </p>
+                          {!item.isCorrect && (
+                            <p className="text-emerald-700 font-medium">
+                              <strong>Correct Answer:</strong> {item.options[item.correctOptionIndex]}
+                            </p>
+                          )}
+                          {item.explanation && (
+                            <p className="text-slate-500 italic bg-white/60 p-2 rounded-lg border border-slate-200/50">
+                              💡 {item.explanation}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Action Buttons Bar */}
+>>>>>>> origin/main
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
                 <button

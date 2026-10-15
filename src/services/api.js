@@ -327,5 +327,36 @@ export const fetchAllLessons = async () => {
   return response.data;
 };
 
+// ─── Quiz & Assessment Services (SLP-17) ────────────────────────────────────
+export const fetchLessonQuiz = async (lessonId) => {
+  try {
+    const response = await api.get(`/quizzes/lesson/${lessonId}`);
+    return response.data.quiz;
+  } catch (err) {
+    if (err.response?.status === 404) return null;
+    throw err;
+  }
+};
+
+export const createQuiz = async (quizData) => {
+  const response = await api.post('/quizzes', quizData);
+  return response.data;
+};
+
+export const updateQuiz = async (quizId, quizData) => {
+  const response = await api.put(`/quizzes/${quizId}`, quizData);
+  return response.data;
+};
+
+export const deleteQuiz = async (quizId) => {
+  const response = await api.delete(`/quizzes/${quizId}`);
+  return response.data;
+};
+
+export const submitQuiz = async (quizId, answers) => {
+  const response = await api.post(`/quizzes/${quizId}/submit`, { answers });
+  return response.data;
+};
+
 export default api;
 
