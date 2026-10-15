@@ -8,7 +8,7 @@ import {
 } from '../services/api';
 import ProgressBar from '../components/ProgressBar';
 import CourseCard from '../components/CourseCard';
-import ChallengeCard from '../components/ChallengeCard';
+
 import {
   BookOpen,
   CheckCircle,
@@ -168,6 +168,9 @@ const Dashboard = () => {
           <p className="text-2xl font-bold text-slate-900">{progressSummary.overallProgress || 0}%</p>
         </div>
       </div>
+
+      {/* Student Learning Calendar: Daily study time heatmap & consistency */}
+      <StudentLearningCalendar />
 
       {/* Continue Learning Section */}
       <div className="space-y-6">

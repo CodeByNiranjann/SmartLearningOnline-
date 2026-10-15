@@ -135,7 +135,7 @@ const CourseDetails = () => {
     ? modules[0].lessons[0]._id
     : null;
 
-  const currentLessonId = progress?.currentLesson || firstLessonId;
+  const currentLessonId = progress?.resumeLessonId || progress?.lastAccessedLesson?._id || progress?.currentLesson || firstLessonId;
   const completedLessons = progress?.completedLessons || [];
   const progressPercentage = progress?.progressPercentage || 0;
 

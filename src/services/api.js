@@ -105,6 +105,7 @@ export const enrollInCourse = async (courseId) => {
   const response = await api.post(`/courses/${courseId}/enroll`);
   return response.data;
 };
+export const enrollCourse = enrollInCourse;
 
 export const fetchEnrollmentStatus = async (courseId) => {
   const response = await api.get(`/courses/${courseId}/enrollment-status`);
@@ -180,6 +181,47 @@ export const fetchLessonResources = async (lessonId) => {
   return response.data;
 };
 
+export const uploadLessonResources = async (lessonId, formData, onUploadProgress) => {
+  const response = await api.post(`/lessons/${lessonId}/resources`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress,
+  });
+  return response.data;
+};
+
+export const fetchResourceDetails = async (resourceId) => {
+  const response = await api.get(`/resources/${resourceId}`);
+  return response.data;
+};
+
+export const updateResourceMetadata = async (resourceId, metadata) => {
+  const response = await api.patch(`/resources/${resourceId}`, metadata);
+  return response.data;
+};
+
+export const replaceResourceFile = async (resourceId, formData, onUploadProgress) => {
+  const response = await api.put(`/resources/${resourceId}/file`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress,
+  });
+  return response.data;
+};
+
+export const deleteResource = async (resourceId) => {
+  const response = await api.delete(`/resources/${resourceId}`);
+  return response.data;
+};
+
+export const getResourceDownloadUrl = (resourceId) => {
+  const baseURL = api.defaults.baseURL || 'http://localhost:5000/api';
+  return `${baseURL}/resources/${resourceId}/download`;
+};
+
+export const getResourcePreviewUrl = (resourceId) => {
+  const baseURL = api.defaults.baseURL || 'http://localhost:5000/api';
+  return `${baseURL}/resources/${resourceId}/preview`;
+};
+
 // Progress Services
 export const fetchStudentProgress = async () => {
   const response = await api.get('/progress');
@@ -193,6 +235,37 @@ export const fetchCourseProgress = async (courseId) => {
 
 export const completeLesson = async (courseId, lessonId) => {
   const response = await api.post('/progress/complete-lesson', { courseId, lessonId });
+  return response.data;
+};
+
+export const completeModule = async (courseId, moduleId) => {
+  const response = await api.post('/progress/complete-module', { courseId, moduleId });
+  return response.data;
+};
+
+export const updatePlaybackProgress = async ({ courseId, lessonId, playedSeconds, durationSeconds, completed }) => {
+  const response = await api.post('/progress/playback', {
+    courseId,
+    lessonId,
+    playedSeconds,
+    durationSeconds,
+    completed,
+  });
+  return response.data;
+};
+
+export const fetchLearningCalendar = async (params = {}) => {
+  const response = await api.get('/progress/calendar', { params });
+  return response.data;
+};
+
+export const logStudyTime = async ({ courseId, minutes = 1 }) => {
+  const response = await api.post('/progress/log-study-time', { courseId, minutes });
+  return response.data;
+};
+
+export const seedCalendarActivity = async () => {
+  const response = await api.post('/progress/seed-calendar');
   return response.data;
 };
 

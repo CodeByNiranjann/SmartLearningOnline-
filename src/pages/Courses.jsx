@@ -14,10 +14,11 @@ const Courses = () => {
   const [categories, setCategories] = useState([
     'All',
     'Web Development',
+    'Data Science & AI',
+    'Cloud & DevOps',
+    'Cybersecurity',
+    'Mobile Development',
     'Software Engineering',
-    'Computer Science',
-    'Data Science',
-    'Other',
   ]);
   const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 

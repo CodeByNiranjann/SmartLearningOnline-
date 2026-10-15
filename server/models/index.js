@@ -9,11 +9,6 @@ import Quiz from './Quiz.js';
 import Review from './Review.js';
 import Certificate from './Certificate.js';
 import Session from './Session.js';
-import InternshipProject from './InternshipProject.js';
-import StudentProjectProgress from './StudentProjectProgress.js';
-import CodingChallenge from './CodingChallenge.js';
-import ChallengeAttempt from './ChallengeAttempt.js';
-import SkillAssessment from './SkillAssessment.js';
 
 export {
   User,
@@ -27,9 +22,5 @@ export {
   Review,
   Certificate,
   Session,
-  InternshipProject,
-  StudentProjectProgress,
-  CodingChallenge,
-  ChallengeAttempt,
-  SkillAssessment,
+
 };
