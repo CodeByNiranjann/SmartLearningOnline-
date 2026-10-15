@@ -1,10 +1,13 @@
 import express from 'express';
+import fs from 'fs';
+import path from 'path';
 import Lesson from '../models/Lesson.js';
 import Module from '../models/Module.js';
 import Course from '../models/Course.js';
 import Resource from '../models/Resource.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { requireRole, canManageCourse } from '../middleware/roleMiddleware.js';
+import { UPLOAD_DIR } from '../config/uploadConfig.js';
 
 const router = express.Router();
 
@@ -34,12 +37,43 @@ router.get('/:lessonId', async (req, res) => {
     const prevLesson = currentIndex > 0 ? courseLessons[currentIndex - 1] : null;
     const nextLesson = currentIndex < courseLessons.length - 1 ? courseLessons[currentIndex + 1] : null;
 
+    const currentModule = allModules.find((m) => m._id.toString() === lesson.moduleId.toString());
+    const nextLessonModule = nextLesson
+      ? allModules.find((m) => m._id.toString() === nextLesson.moduleId.toString())
+      : null;
+    const isNextLessonInNewModule = Boolean(
+      nextLesson && nextLesson.moduleId.toString() !== lesson.moduleId.toString()
+    );
+
+    const structuredModules = allModules.map((mod) => ({
+      _id: mod._id,
+      title: mod.title,
+      order: mod.order,
+      lessons: courseLessons
+        .filter((l) => l.moduleId.toString() === mod._id.toString())
+        .map((l) => ({
+          _id: l._id,
+          title: l.title,
+          duration: l.duration || '10 min',
+          order: l.order,
+          videoUrl: l.videoUrl,
+        })),
+    }));
+
     res.json({
       lesson,
       prevLessonId: prevLesson ? prevLesson._id : null,
+      prevLessonTitle: prevLesson ? prevLesson.title : null,
       nextLessonId: nextLesson ? nextLesson._id : null,
+      nextLessonTitle: nextLesson ? nextLesson.title : null,
+      nextLessonModuleId: nextLesson ? nextLesson.moduleId : null,
+      nextLessonModuleTitle: nextLessonModule ? nextLessonModule.title : null,
+      isNextLessonInNewModule,
+      currentModuleId: lesson.moduleId,
+      currentModuleTitle: currentModule ? currentModule.title : null,
       totalCourseLessons: courseLessons.length,
       currentLessonIndex: currentIndex + 1,
+      modules: structuredModules,
     });
   } catch (error) {
     console.error('Fetch lesson error:', error);
@@ -134,11 +168,13 @@ router.put('/:id', protect, requireRole('instructor', 'admin'), async (req, res)
       lesson.courseId = newModule.courseId;
     }
 
-    const { title, description, content, order } = req.body;
+    const { title, description, content, order, videoUrl, duration } = req.body;
 
     if (title !== undefined) lesson.title = title.trim();
     if (description !== undefined) lesson.description = description.trim();
     if (content !== undefined) lesson.content = content.trim();
+    if (videoUrl !== undefined) lesson.videoUrl = videoUrl.trim();
+    if (duration !== undefined) lesson.duration = duration.trim();
     if (order !== undefined) lesson.order = order;
 
     await lesson.save();
@@ -182,9 +218,25 @@ router.delete('/:id', protect, requireRole('instructor', 'admin'), async (req, r
       });
     }
 
+    // Clean up associated resources and their physical files
+    const associatedResources = await Resource.find({ lessonId: lesson._id });
+    for (const r of associatedResources) {
+      if (r.storedFilename) {
+        const filePath = path.join(UPLOAD_DIR, r.storedFilename);
+        if (fs.existsSync(filePath)) {
+          try {
+            fs.unlinkSync(filePath);
+          } catch (e) {
+            console.warn('Could not delete resource file on lesson deletion:', e);
+          }
+        }
+      }
+    }
+    await Resource.deleteMany({ lessonId: lesson._id });
+
     await Lesson.findByIdAndDelete(lesson._id);
 
-    res.json({ message: 'Lesson deleted successfully.' });
+    res.json({ message: 'Lesson and associated resources deleted successfully.' });
   } catch (error) {
     console.error('Delete lesson error:', error);
     res.status(500).json({ message: 'Error deleting lesson.' });

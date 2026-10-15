@@ -55,6 +55,8 @@ router.get('/', optionalProtect, async (req, res) => {
       query.status = status;
     } else if (status === 'all' && (isAdmin || isOwnerInstructor)) {
       // allow all statuses
+    } else if (isAdmin) {
+      // Admin managing courses: see all courses including drafts by default
     } else if (instructor_id && isOwnerInstructor) {
       // instructor managing own courses: allow viewing drafts
     } else {

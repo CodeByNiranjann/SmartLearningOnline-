@@ -200,7 +200,7 @@ router.post('/:moduleId/lessons', protect, requireRole('instructor', 'admin'), a
       });
     }
 
-    const { title, description, content, order } = req.body;
+    const { title, description, content, order, videoUrl, duration } = req.body;
 
     if (!title) {
       return res.status(400).json({ message: 'Lesson title is required.' });
@@ -223,6 +223,8 @@ router.post('/:moduleId/lessons', protect, requireRole('instructor', 'admin'), a
       title: title.trim(),
       description: description?.trim() || '',
       content: content.trim(),
+      videoUrl: videoUrl?.trim() || '',
+      duration: duration?.trim() || '15 min',
       order: lessonOrder,
     });
 

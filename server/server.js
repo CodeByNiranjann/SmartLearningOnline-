@@ -10,6 +10,7 @@ import lessonRoutes from './routes/lessonRoutes.js';
 import progressRoutes from './routes/progressRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import instructorRoutes from './routes/instructorRoutes.js';
+import resourceRoutes from './routes/resourceRoutes.js';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use(cors());
 app.use(express.json());
 
 // Routes
+app.use('/api', resourceRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/modules', moduleRoutes);

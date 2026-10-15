@@ -22,6 +22,14 @@ const lessonSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  videoUrl: {
+    type: String,
+    trim: true,
+  },
+  duration: {
+    type: String,
+    trim: true,
+  },
   order: {
     type: Number,
     required: true,

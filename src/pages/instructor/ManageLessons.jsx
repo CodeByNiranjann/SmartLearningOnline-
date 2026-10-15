@@ -6,10 +6,11 @@ import {
 import api from '../../services/api';
 import {
   ArrowLeft, Plus, Edit2, Trash2, BookOpen, GripVertical,
-  AlertCircle, CheckCircle, RefreshCw, Save, X, FileText,
+  AlertCircle, CheckCircle, RefreshCw, Save, X, FileText, Paperclip,
 } from 'lucide-react';
+import LessonResourcesModal from '../../components/LessonResourcesModal';
 
-const EMPTY_LESSON_FORM = { title: '', description: '', content: '', order: '' };
+const EMPTY_LESSON_FORM = { title: '', description: '', content: '', videoUrl: '', duration: '15 min', order: '' };
 
 const ManageLessons = () => {
   const { courseId, moduleId } = useParams();
@@ -28,6 +29,7 @@ const ManageLessons = () => {
 
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+  const [selectedLessonForResources, setSelectedLessonForResources] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
@@ -64,6 +66,8 @@ const ManageLessons = () => {
       title: lesson.title,
       description: lesson.description || '',
       content: lesson.content || '',
+      videoUrl: lesson.videoUrl || '',
+      duration: lesson.duration || '15 min',
       order: lesson.order.toString(),
     });
     setShowForm(true);
@@ -84,6 +88,8 @@ const ManageLessons = () => {
       title: form.title.trim(),
       description: form.description.trim(),
       content: form.content.trim(),
+      videoUrl: form.videoUrl.trim(),
+      duration: form.duration.trim(),
       order: form.order ? parseInt(form.order, 10) : undefined,
     };
 
@@ -242,6 +248,36 @@ const ManageLessons = () => {
               />
             </div>
 
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="sm:col-span-2 space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  YouTube Video URL
+                </label>
+                <input
+                  type="url"
+                  name="videoUrl"
+                  value={form.videoUrl}
+                  onChange={handleFormChange}
+                  placeholder="https://www.youtube.com/watch?v=..."
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-sm font-mono"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
+                  Duration
+                </label>
+                <input
+                  type="text"
+                  name="duration"
+                  value={form.duration}
+                  onChange={handleFormChange}
+                  placeholder="e.g. 15 min"
+                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-600 text-sm"
+                />
+              </div>
+            </div>
+
             <div className="space-y-1.5">
               <label className="text-xs font-semibold text-slate-700 uppercase tracking-wider">
                 Content <span className="text-rose-500">*</span>
@@ -315,6 +351,14 @@ const ManageLessons = () => {
               {/* Actions */}
               <div className="flex items-center gap-2 shrink-0">
                 <button
+                  onClick={() => setSelectedLessonForResources(lesson)}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-semibold transition-colors"
+                  title="Manage Lesson Resources & Safe Uploads"
+                >
+                  <Paperclip className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">Resources</span>
+                </button>
+                <button
                   onClick={() => openEdit(lesson)}
                   className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-700 text-xs font-semibold transition-colors"
                 >
@@ -332,6 +376,15 @@ const ManageLessons = () => {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Lesson Resources Modal */}
+      {selectedLessonForResources && (
+        <LessonResourcesModal
+          lesson={selectedLessonForResources}
+          onClose={() => setSelectedLessonForResources(null)}
+          onUpdated={loadData}
+        />
       )}
 
       {/* Delete Confirmation Modal */}
