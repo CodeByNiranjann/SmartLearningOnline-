@@ -19,6 +19,11 @@ import PracticalExercise from './PracticalExercise.js';
 import ExerciseSubmission from './ExerciseSubmission.js';
 
 import LessonProgress from './LessonProgress.js';
+import InternshipProject from './InternshipProject.js';
+import StudentProjectProgress from './StudentProjectProgress.js';
+import CodingChallenge from './CodingChallenge.js';
+import ChallengeAttempt from './ChallengeAttempt.js';
+import SkillAssessment from './SkillAssessment.js';
 
 export {
   User,
@@ -41,5 +46,10 @@ export {
   MilestoneProgress,
   PracticalExercise,
   ExerciseSubmission,
+  InternshipProject,
+  StudentProjectProgress,
+  CodingChallenge,
+  ChallengeAttempt,
+  SkillAssessment,
 
 };
