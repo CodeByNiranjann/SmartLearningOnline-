@@ -17,6 +17,7 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, protected: true },
     { name: 'Courses', path: '/courses', icon: Compass, protected: false },
+    { name: 'Resources', path: '/resources', icon: BookOpen, protected: false },
     { name: 'Projects', path: '/internship-projects', icon: Briefcase, protected: false },
     { name: 'Coding Arena', path: '/coding-challenges', icon: Code2, protected: false },
     { name: 'Skill Tracks', path: '/skill-learning', icon: Target, protected: true },

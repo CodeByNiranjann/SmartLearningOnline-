@@ -8,6 +8,7 @@ import {
 } from '../services/api';
 import ProgressBar from '../components/ProgressBar';
 import CourseCard from '../components/CourseCard';
+import StudentLearningCalendar from '../components/StudentLearningCalendar';
 
 import {
   BookOpen,
@@ -240,13 +241,22 @@ const Dashboard = () => {
                     )}
                   </div>
 
-                  <Link
-                    to={nextLessonId ? `/learning/${course._id}/${nextLessonId}` : `/courses/${course._id}`}
-                    className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Continue Learning</span>
-                  </Link>
+                  <div className="grid grid-cols-2 gap-2 pt-1">
+                    <Link
+                      to={`/courses/${course._id}`}
+                      className="py-2.5 px-3 rounded-xl border border-slate-200 hover:border-blue-300 hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors"
+                    >
+                      <Layers className="w-3.5 h-3.5 text-slate-400" />
+                      <span>Learning Path</span>
+                    </Link>
+                    <Link
+                      to={nextLessonId ? `/learning/${course._id}/${nextLessonId}` : `/courses/${course._id}`}
+                      className="py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-current" />
+                      <span>Continue</span>
+                    </Link>
+                  </div>
                 </div>
               );
             })}

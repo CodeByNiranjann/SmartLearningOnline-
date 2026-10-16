@@ -165,7 +165,7 @@ const MyLearning = () => {
                     to={`/courses/${course._id}`}
                     className="text-xs font-semibold text-slate-600 hover:text-blue-600 transition-colors"
                   >
-                    View Curriculum
+                    View Learning Path
                   </Link>
 
                   <Link

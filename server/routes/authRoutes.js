@@ -30,6 +30,7 @@ const parseDevice = (userAgent = '') => {
   return 'Desktop Browser';
 };
 
+
 // Create a database session
 const createSession = async (userId, req) => {
   const sessionId = `sess_${crypto.randomUUID()}`;

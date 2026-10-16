@@ -222,6 +222,16 @@ export const getResourcePreviewUrl = (resourceId) => {
   return `${baseURL}/resources/${resourceId}/preview`;
 };
 
+export const fetchCourseResources = async (courseId, params = {}) => {
+  const response = await api.get(`/courses/${courseId}/resources`, { params });
+  return response.data;
+};
+
+export const fetchAllResources = async (params = {}) => {
+  const response = await api.get('/resources', { params });
+  return response.data;
+};
+
 // Progress Services
 export const fetchStudentProgress = async () => {
   const response = await api.get('/progress');

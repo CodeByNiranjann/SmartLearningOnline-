@@ -246,6 +246,146 @@ router.get('/lessons/:lessonId/resources', optionalProtect, async (req, res) => 
   }
 });
 
+// @route   GET /api/courses/:courseId/resources
+// @desc    List all learning resources associated with all lessons in a course (SLP-4)
+// @access  Public / Optional Auth
+router.get('/courses/:courseId/resources', optionalProtect, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const { type, search } = req.query;
+
+    const course = await Course.findById(courseId);
+    if (!course) {
+      return res.status(404).json({ message: 'Course not found.' });
+    }
+
+    const modules = await Module.find({ courseId }).sort({ order: 1 });
+    const moduleMap = {};
+    const moduleIds = modules.map((m) => {
+      moduleMap[m._id.toString()] = m;
+      return m._id;
+    });
+
+    const lessons = await Lesson.find({ moduleId: { $in: moduleIds } }).sort({ order: 1 });
+    const lessonMap = {};
+    const lessonIds = lessons.map((l) => {
+      lessonMap[l._id.toString()] = {
+        ...l.toObject(),
+        module: moduleMap[l.moduleId?.toString()],
+      };
+      return l._id;
+    });
+
+    const resourceQuery = { lessonId: { $in: lessonIds } };
+    if (type && type !== 'All') {
+      resourceQuery.type = type;
+    }
+    if (search) {
+      resourceQuery.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const resources = await Resource.find(resourceQuery).sort({ createdAt: -1 });
+
+    const enrichedResources = resources.map((r) => {
+      const les = lessonMap[r.lessonId.toString()];
+      return {
+        ...r.toObject(),
+        lessonTitle: les?.title || 'Course Lesson',
+        lessonOrder: les?.order || 1,
+        moduleTitle: les?.module?.title || 'Course Module',
+        courseTitle: course.title,
+        courseId: course._id,
+      };
+    });
+
+    res.json(enrichedResources);
+  } catch (error) {
+    console.error('Fetch course resources error:', error);
+    res.status(500).json({ message: 'Error retrieving course resources.' });
+  }
+});
+
+// @route   GET /api/resources
+// @desc    Global Learning Resources Hub — browse and search all resources in one place (SLP-4)
+// @access  Public / Optional Auth
+router.get('/resources', optionalProtect, async (req, res) => {
+  try {
+    const { search, type, courseId } = req.query;
+
+    let targetLessonIds = null;
+    if (courseId) {
+      const modules = await Module.find({ courseId });
+      const lessons = await Lesson.find({ moduleId: { $in: modules.map((m) => m._id) } });
+      targetLessonIds = lessons.map((l) => l._id);
+    }
+
+    // Get all published courses
+    const courses = await Course.find({ status: { $ne: 'draft' } });
+    const courseMap = {};
+    courses.forEach((c) => {
+      courseMap[c._id.toString()] = c;
+    });
+
+    const allModules = await Module.find({ courseId: { $in: courses.map((c) => c._id) } });
+    const moduleMap = {};
+    allModules.forEach((m) => {
+      moduleMap[m._id.toString()] = m;
+    });
+
+    const allLessons = await Lesson.find({ moduleId: { $in: allModules.map((m) => m._id) } });
+    const lessonMap = {};
+    allLessons.forEach((l) => {
+      lessonMap[l._id.toString()] = {
+        ...l.toObject(),
+        module: moduleMap[l.moduleId?.toString()],
+        course: courseMap[l.courseId?.toString()],
+      };
+    });
+
+    const query = {};
+    if (targetLessonIds) {
+      query.lessonId = { $in: targetLessonIds };
+    } else {
+      query.lessonId = { $in: allLessons.map((l) => l._id) };
+    }
+
+    if (type && type !== 'All') {
+      query.type = type;
+    }
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { originalFilename: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    const resources = await Resource.find(query).sort({ createdAt: -1 });
+
+    const enriched = resources.map((r) => {
+      const les = lessonMap[r.lessonId.toString()];
+      return {
+        ...r.toObject(),
+        lessonTitle: les?.title || 'Lesson Resource',
+        lessonOrder: les?.order || 1,
+        moduleTitle: les?.module?.title || 'Course Module',
+        courseTitle: les?.course?.title || 'Course',
+        courseCategory: les?.course?.category || 'General',
+        courseId: les?.course?._id || null,
+      };
+    });
+
+    res.json(enriched);
+  } catch (error) {
+    console.error('Fetch all resources error:', error);
+    res.status(500).json({ message: 'Error retrieving learning resources.' });
+  }
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // SINGLE RESOURCE CRUD & DOWNLOAD ENDPOINTS
 // ─────────────────────────────────────────────────────────────────────────────

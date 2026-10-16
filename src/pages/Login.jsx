@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { BookOpen, Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { BookOpen, Mail, Lock, AlertCircle, ArrowRight, ShieldCheck, CheckCircle2, Sparkles, GraduationCap, User } from 'lucide-react';
 
 const Login = () => {
   const [formData, setFormData] = useState({
@@ -14,6 +14,15 @@ const Login = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+
+  const handleQuickFill = (email, password) => {
+    setFormData({
+      email,
+      password,
+      rememberMe: true,
+    });
+    setError('');
+  };
 
   const handleChange = (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -92,6 +101,66 @@ const Login = () => {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md relative z-10">
         <div className="bg-white py-8 px-6 sm:px-10 rounded-2xl shadow-[0_4px_25px_rgba(0,0,0,0.06)] border border-slate-200/80">
+          {/* Quick Demo Test Credentials Bar */}
+          <div className="mb-6 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-xl">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-blue-900 flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-blue-600" />
+                Quick Demo Login
+              </span>
+              <span className="text-[10px] font-medium text-blue-600 bg-blue-100/70 px-1.5 py-0.5 rounded-full">
+                Click to Auto-fill
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => handleQuickFill('student1@example.com', 'Password123!')}
+                className={`py-2 px-2 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                  formData.email === 'student1@example.com'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                }`}
+              >
+                <span className="font-semibold flex items-center gap-1">
+                  <GraduationCap className="w-3 h-3" />
+                  Student
+                </span>
+                <span className="text-[10px] opacity-75">John S.</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickFill('instructor@learnhub.com', 'instructor123')}
+                className={`py-2 px-2 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                  formData.email === 'instructor@learnhub.com'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                }`}
+              >
+                <span className="font-semibold flex items-center gap-1">
+                  <User className="w-3 h-3" />
+                  Instructor
+                </span>
+                <span className="text-[10px] opacity-75">Alex R.</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handleQuickFill('admin@learnhub.com', 'admin123')}
+                className={`py-2 px-2 rounded-lg text-xs font-medium border text-center transition-all cursor-pointer flex flex-col items-center justify-center ${
+                  formData.email === 'admin@learnhub.com'
+                    ? 'bg-blue-600 text-white border-blue-600 shadow-sm'
+                    : 'bg-white text-slate-700 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                }`}
+              >
+                <span className="font-semibold flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" />
+                  Admin
+                </span>
+                <span className="text-[10px] opacity-75">Platform</span>
+              </button>
+            </div>
+          </div>
+
           {error && (
             <div role="alert" className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-200 flex items-start gap-3 text-rose-700 text-sm">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-rose-600" />

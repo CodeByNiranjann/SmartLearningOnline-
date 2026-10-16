@@ -101,7 +101,7 @@ const ResourceCard = ({ resource }) => {
                   {resource.fileExtension.replace('.', '')}
                 </span>
               )}
-              {resource.fileSizeBytes && (
+              {Boolean(resource.fileSizeBytes) && (
                 <span className="text-[10px] text-slate-500 font-medium">
                   • {formatFileSize(resource.fileSizeBytes)}
                 </span>

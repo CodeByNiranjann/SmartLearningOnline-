@@ -22,6 +22,7 @@ import CodingChallenges from './pages/CodingChallenges';
 import ChallengeDetails from './pages/ChallengeDetails';
 import SkillLearning from './pages/SkillLearning';
 import SkillAssessment from './pages/SkillAssessment';
+import ResourcesHub from './pages/ResourcesHub';
 
 // Instructor Management Pages
 import MyCourses from './pages/instructor/MyCourses';
@@ -92,6 +93,7 @@ function App() {
             <Route path="/internship-projects/:projectId" element={<ProjectDetails />} />
             <Route path="/coding-challenges" element={<CodingChallenges />} />
             <Route path="/coding-challenges/:id" element={<ChallengeDetails />} />
+            <Route path="/resources" element={<ResourcesHub />} />
 
             {/* Protected Student Routes */}
             <Route element={<ProtectedRoute />}>

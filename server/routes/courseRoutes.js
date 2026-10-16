@@ -61,7 +61,7 @@ router.get('/', optionalProtect, async (req, res) => {
       // instructor managing own courses: allow viewing drafts
     } else {
       // Public learners: strictly hide unpublished courses
-      query.status = 'published';
+      query.$or = [{ status: 'published' }, { status: { $exists: false } }];
     }
 
     const courses = await Course.find(query).sort({ createdAt: -1 });

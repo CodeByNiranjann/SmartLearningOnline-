@@ -6,10 +6,12 @@ import {
   fetchCourseProgress,
   fetchEnrollmentStatus,
   enrollInCourse,
+  fetchCourseResources,
 } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import LearningPath from '../components/LearningPath';
 import ProgressBar from '../components/ProgressBar';
+import ResourceCard from '../components/ResourceCard';
 import {
   Clock,
   User,
@@ -21,6 +23,9 @@ import {
   GraduationCap,
   CheckCircle,
   Sparkles,
+  FolderDown,
+  Search,
+  ExternalLink,
 } from 'lucide-react';
 
 const CourseDetails = () => {
@@ -30,6 +35,10 @@ const CourseDetails = () => {
 
   const [course, setCourse] = useState(null);
   const [modules, setModules] = useState([]);
+  const [courseResources, setCourseResources] = useState([]);
+  const [activeTab, setActiveTab] = useState('curriculum'); // 'curriculum' | 'resources'
+  const [resourceSearch, setResourceSearch] = useState('');
+  const [resourceTypeFilter, setResourceTypeFilter] = useState('All');
   const [progress, setProgress] = useState(null);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
@@ -44,13 +53,15 @@ const CourseDetails = () => {
         setLoading(true);
         setError('');
 
-        const [courseData, modulesData] = await Promise.all([
+        const [courseData, modulesData, resourcesData] = await Promise.all([
           fetchCourseDetails(courseId),
           fetchCourseModules(courseId),
+          fetchCourseResources(courseId).catch(() => []),
         ]);
 
         setCourse(courseData);
         setModules(modulesData);
+        setCourseResources(resourcesData || []);
 
         if (isAuthenticated) {
           try {
@@ -283,23 +294,129 @@ const CourseDetails = () => {
         </div>
       </div>
 
-      {/* Structured Learning Path Section */}
+      {/* Curriculum & Resources Tab Switcher */}
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Structured Learning Path</h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Step-by-step roadmap to master this course topic
-            </p>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
+          <div className="inline-flex p-1.5 bg-slate-100 rounded-2xl gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab('curriculum')}
+              className={`px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === 'curriculum'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <Layers className="w-4 h-4" />
+              <span>Structured Learning Path</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('resources')}
+              className={`px-5 py-2.5 rounded-xl text-xs md:text-sm font-bold transition-all cursor-pointer flex items-center gap-2 ${
+                activeTab === 'resources'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <FolderDown className="w-4 h-4" />
+              <span>Course Resources</span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-blue-50 text-blue-700">
+                {courseResources.length}
+              </span>
+            </button>
           </div>
+
+          <Link
+            to="/resources"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+          >
+            <span>All Platform Resources Hub</span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        <LearningPath
-          modules={modules}
-          courseId={course._id}
-          completedLessons={completedLessons}
-          currentLessonId={currentLessonId}
-        />
+        {activeTab === 'curriculum' ? (
+          <LearningPath
+            modules={modules}
+            courseId={course._id}
+            completedLessons={completedLessons}
+            currentLessonId={currentLessonId}
+            isEnrolled={isEnrolled}
+            onEnroll={handleEnroll}
+          />
+        ) : (
+          <div className="space-y-6">
+            {/* Course Resources Filter & Search Bar */}
+            <div className="bg-white rounded-2xl border border-slate-200/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-4">
+              <div className="flex flex-col sm:flex-row items-center gap-3">
+                <div className="relative flex-1 w-full">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={resourceSearch}
+                    onChange={(e) => setResourceSearch(e.target.value)}
+                    placeholder="Search materials in this course (documentation, cheat sheets, code)..."
+                    className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs sm:text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                  {['All', 'Documentation', 'GitHub', 'Article', 'Video', 'PDF'].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setResourceTypeFilter(type)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                        resourceTypeFilter === type
+                          ? 'bg-blue-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200/70 hover:text-slate-900'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Course Resources Cards */}
+            {courseResources.length === 0 ? (
+              <div className="bg-white border border-slate-200/80 p-12 rounded-3xl text-center space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
+                <BookOpen className="w-10 h-10 text-slate-400 mx-auto" />
+                <h3 className="text-base font-bold text-slate-800">No Resources Attached Yet</h3>
+                <p className="text-xs text-slate-500">
+                  The instructor has not attached additional reading or starter materials to this course yet.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                {courseResources
+                  .filter((r) => {
+                    if (resourceTypeFilter !== 'All' && r.type !== resourceTypeFilter) return false;
+                    if (resourceSearch.trim()) {
+                      const term = resourceSearch.toLowerCase();
+                      const matchTitle = r.title?.toLowerCase().includes(term);
+                      const matchDesc = r.description?.toLowerCase().includes(term);
+                      const matchLesson = r.lessonTitle?.toLowerCase().includes(term);
+                      if (!matchTitle && !matchDesc && !matchLesson) return false;
+                    }
+                    return true;
+                  })
+                  .map((resource) => (
+                    <div key={resource._id} className="space-y-2">
+                      <ResourceCard resource={resource} />
+                      {resource.lessonTitle && (
+                        <p className="text-[11px] text-slate-400 pl-1 truncate">
+                          Attached to: <span className="font-semibold text-slate-600">{resource.lessonTitle}</span>
+                        </p>
+                      )}
+                    </div>
+                  ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
