@@ -1,0 +1,7 @@
+# Lab Experiment Sheet: Exercise 3: Microservice Dockerfile Security Audit & Hardening Report
+
+Objective:
+Audit a vulnerable, monolithic Dockerfile and rewrite it as a hardened multi-stage build running under an unprivileged user with minimal attack surface.
+
+Deliverables:
+- Provide complete solution in an uploaded document or code bundle.

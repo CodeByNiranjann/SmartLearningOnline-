@@ -6,7 +6,7 @@ import { CheckCircle, PlayCircle, Lock, BookOpen, ArrowRight } from 'lucide-reac
  * Pure helper function to compute module completion and sequential lesson unlocking
  * without mutating variables within React component render or closure scopes.
  */
-function buildComputedModules(modules, completedSet, currentIdStr) {
+function buildComputedModules(modules, completedSet, currentIdStr, progressMap) {
   let prevLessonCompleted = true; // First lesson is always unlocked
   const result = [];
 
@@ -21,9 +21,12 @@ function buildComputedModules(modules, completedSet, currentIdStr) {
     const lessonsWithStatus = [];
     for (const lesson of modLessons) {
       const lessonIdStr = lesson._id?.toString();
-      const isCompleted = completedSet.has(lessonIdStr);
+      const lp = progressMap ? progressMap.get(lessonIdStr) : null;
+      const isCompleted = completedSet.has(lessonIdStr) || lp?.status === 'COMPLETED' || lp?.completed === true;
       const isCurrent = !isCompleted && Boolean(currentIdStr && currentIdStr === lessonIdStr);
       const isUnlocked = prevLessonCompleted || isCompleted || isCurrent;
+      const isInProgress = !isCompleted && (lp?.status === 'IN_PROGRESS' || (lp?.lastPositionSeconds > 0) || (lp?.playedSeconds > 0));
+      const progressPercentage = lp?.progressPercentage || (lp?.durationSeconds > 0 ? Math.round(((lp.lastPositionSeconds || lp.playedSeconds || 0) / lp.durationSeconds) * 100) : 0);
 
       // Update sequential completion status for the next lesson
       prevLessonCompleted = isCompleted;
@@ -33,6 +36,8 @@ function buildComputedModules(modules, completedSet, currentIdStr) {
         isCompleted,
         isCurrent,
         isUnlocked,
+        isInProgress,
+        progressPercentage,
       });
     }
 
@@ -47,7 +52,7 @@ function buildComputedModules(modules, completedSet, currentIdStr) {
   return result;
 }
 
-const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLessonId }) => {
+const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLessonId, lessonProgress = [] }) => {
   // Normalize completedLessons to a set of string IDs
   const completedSet = useMemo(() => {
     return new Set(
@@ -57,6 +62,15 @@ const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLe
     );
   }, [completedLessons]);
 
+  const progressMap = useMemo(() => {
+    const map = new Map();
+    for (const p of lessonProgress || []) {
+      const id = p.lessonId?._id ? p.lessonId._id.toString() : (p.lessonId || p.lesson_id)?.toString();
+      if (id) map.set(id, p);
+    }
+    return map;
+  }, [lessonProgress]);
+
   const currentIdStr = useMemo(() => {
     return typeof currentLessonId === 'object' && currentLessonId?._id
       ? currentLessonId._id.toString()
@@ -65,8 +79,8 @@ const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLe
 
   // Compute status for all modules and lessons
   const computedModules = useMemo(() => {
-    return buildComputedModules(modules, completedSet, currentIdStr);
-  }, [modules, completedSet, currentIdStr]);
+    return buildComputedModules(modules, completedSet, currentIdStr, progressMap);
+  }, [modules, completedSet, currentIdStr, progressMap]);
 
   if (!modules || modules.length === 0) {
     return (
@@ -149,7 +163,7 @@ const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLe
                 </div>
               ) : (
                 lessons.map((lesson, lessonIndex) => {
-                  const { isCompleted, isCurrent, isUnlocked } = lesson;
+                  const { isCompleted, isCurrent, isUnlocked, isInProgress, progressPercentage } = lesson;
 
                   return (
                     <div
@@ -201,6 +215,26 @@ const LearningPath = ({ modules = [], courseId, completedLessons = [], currentLe
                           {lesson.description && (
                             <p className="text-xs text-slate-500 truncate mt-0.5">{lesson.description}</p>
                           )}
+                          <div className="flex items-center gap-2 mt-1">
+                            {isCompleted ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                Completed ✓
+                              </span>
+                            ) : isInProgress ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                                In Progress ({progressPercentage}%)
+                              </span>
+                            ) : isUnlocked ? (
+                              <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-600 border border-slate-200">
+                                Not Started
+                              </span>
+                            ) : null}
+                            {lesson.duration && (
+                              <span className="text-[11px] text-slate-400">
+                                {lesson.duration}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
 

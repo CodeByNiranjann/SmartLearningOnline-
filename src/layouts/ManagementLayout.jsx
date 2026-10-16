@@ -19,6 +19,8 @@ import {
   ExternalLink,
   UserCheck,
   User,
+  Code2,
+  FolderGit2,
 } from 'lucide-react';
 
 const ManagementLayout = () => {
@@ -42,6 +44,8 @@ const ManagementLayout = () => {
     { name: 'Instructors', path: '/admin/instructors', icon: UserCheck },
     { name: 'All Courses', path: '/manage/courses', icon: BookOpen },
     { name: 'Modules & Lessons', path: '/admin/curriculum', icon: Layers },
+    { name: 'Practical Exercises', path: '/manage/exercises', icon: Code2 },
+    { name: 'Real-World Projects', path: '/manage/projects', icon: FolderGit2 },
     { name: 'Reports & Analytics', path: '/admin/reports', icon: BarChart3 },
     { name: 'Manage Settings', path: '/admin/settings', icon: Settings },
   ];
@@ -52,6 +56,8 @@ const ManagementLayout = () => {
     { name: 'My Courses', path: '/manage/courses', icon: BookOpen },
     { name: 'Modules', path: '/instructor/modules', icon: Layers },
     { name: 'Lessons', path: '/instructor/lessons', icon: FileText },
+    { name: 'Practical Exercises', path: '/manage/exercises', icon: Code2 },
+    { name: 'Real-World Projects', path: '/manage/projects', icon: FolderGit2 },
     { name: 'My Students', path: '/instructor/students', icon: GraduationCap },
     { name: 'Progress & Reports', path: '/instructor/reports', icon: BarChart3 },
     { name: 'My Profile', path: '/profile', icon: User },

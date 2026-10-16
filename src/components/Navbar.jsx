@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { BookOpen, LogOut, User, Menu, X, LayoutDashboard, Compass, GraduationCap, ShieldCheck, Settings, Sparkles, FolderGit2, Code2 } from 'lucide-react';
 import { BookOpen, LogOut, User, Menu, X, LayoutDashboard, Compass, GraduationCap, ShieldCheck, Settings, Sparkles, Briefcase, Code2, Target } from 'lucide-react';
 
 const Navbar = () => {
@@ -17,6 +18,8 @@ const Navbar = () => {
   const navLinks = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard, protected: true },
     { name: 'Courses', path: '/courses', icon: Compass, protected: false },
+    { name: 'Projects', path: '/projects', icon: FolderGit2, protected: false },
+    { name: 'Exercises', path: '/exercises', icon: Code2, protected: false },
     { name: 'Projects', path: '/internship-projects', icon: Briefcase, protected: false },
     { name: 'Coding Arena', path: '/coding-challenges', icon: Code2, protected: false },
     { name: 'Skill Tracks', path: '/skill-learning', icon: Target, protected: true },
