@@ -163,6 +163,12 @@ router.post('/login', async (req, res) => {
       });
     }
 
+    if (user.isActive === false || user.status === 'deactivated') {
+      return res.status(401).json({
+        message: 'Account has been deactivated. Please contact an administrator.',
+      });
+    }
+
     if (user.isTwoFactorEnabled) {
       const tempToken = jwt.sign(
         { id: user._id, type: '2fa_challenge' },

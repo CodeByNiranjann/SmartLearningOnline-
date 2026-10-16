@@ -74,6 +74,206 @@ router.get('/', protect, async (req, res) => {
   }
 });
 
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/progress/summary
+// @desc  Server-computed progress dashboard for the authenticated student
+// @access Private
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/summary', protect, async (req, res) => {
+  try {
+    const QuizAttempt = (await import('../models/QuizAttempt.js')).default;
+
+    const progressList = await Progress.find({ userId: req.user._id })
+      .populate({
+        path: 'courseId',
+        select: 'title thumbnail category difficulty',
+      });
+
+    const summary = await Promise.all(
+      progressList.map(async (p) => {
+        const course = p.courseId;
+        if (!course) return null;
+
+        const modules = await Module.find({ courseId: course._id }).select('_id');
+        const moduleIds = modules.map((m) => m._id);
+        const totalLessons = await Lesson.countDocuments({ moduleId: { $in: moduleIds } });
+
+        const completedCount = p.completedLessons ? p.completedLessons.length : 0;
+        const percentComplete = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0;
+
+        const completedIds = new Set((p.completedLessons || []).map((id) => id.toString()));
+        let nextLesson = null;
+        outer: for (const mod of modules) {
+          const lessons = await Lesson.find({ moduleId: mod._id }).sort({ order: 1 }).select('_id title');
+          for (const lesson of lessons) {
+            if (!completedIds.has(lesson._id.toString())) {
+              nextLesson = { _id: lesson._id, title: lesson.title, courseId: course._id };
+              break outer;
+            }
+          }
+        }
+
+        const recentAttempts = await QuizAttempt.find({
+          user: req.user._id,
+          course: course._id,
+          status: 'submitted',
+        })
+          .sort({ submittedAt: -1 })
+          .limit(3)
+          .populate('quiz', 'title passingScore')
+          .select('score maxScore percentage passed submittedAt quiz');
+
+        return {
+          courseId: course._id,
+          title: course.title,
+          thumbnail: course.thumbnail,
+          category: course.category,
+          difficulty: course.difficulty,
+          totalLessons,
+          completedLessons: completedCount,
+          percentComplete,
+          isCompleted: percentComplete >= 100,
+          lastAccessedAt: p.lastAccessedAt,
+          nextLesson,
+          recentQuizAttempts: recentAttempts,
+        };
+      })
+    );
+
+    const validSummary = summary.filter(Boolean);
+    const overallPercent = validSummary.length > 0
+      ? Math.round(validSummary.reduce((a, c) => a + c.percentComplete, 0) / validSummary.length)
+      : 0;
+    const completedCourses = validSummary.filter((c) => c.isCompleted).length;
+
+    const allAttempts = await QuizAttempt.find({ user: req.user._id, status: 'submitted' });
+    const avgQuizScore = allAttempts.length > 0
+      ? Math.round(allAttempts.reduce((a, c) => a + (c.percentage || 0), 0) / allAttempts.length)
+      : null;
+    const passedQuizzes = allAttempts.filter((a) => a.passed).length;
+
+    res.json({
+      enrolledCourses: validSummary,
+      overallPercent,
+      completedCourses,
+      totalEnrolled: validSummary.length,
+      quizStats: {
+        total: allAttempts.length,
+        passed: passedQuizzes,
+        avgScore: avgQuizScore,
+      },
+    });
+  } catch (error) {
+    console.error('Progress summary error:', error);
+    res.status(500).json({ message: 'Error computing progress summary: ' + error.message });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GET /api/progress/achievements
+// @desc  Student achievements: completed courses, passed quizzes, graded tasks
+// @access Private
+// ─────────────────────────────────────────────────────────────────────────────
+router.get('/achievements', protect, async (req, res) => {
+  try {
+    const QuizAttempt = (await import('../models/QuizAttempt.js')).default;
+
+    const progressList = await Progress.find({ userId: req.user._id })
+      .populate({ path: 'courseId', select: 'title thumbnail category difficulty' });
+
+    const completedCourseAchievements = await Promise.all(
+      progressList.map(async (p) => {
+        const course = p.courseId;
+        if (!course) return null;
+        const modules = await Module.find({ courseId: course._id }).select('_id');
+        const moduleIds = modules.map((m) => m._id);
+        const totalLessons = await Lesson.countDocuments({ moduleId: { $in: moduleIds } });
+        const completedCount = p.completedLessons?.length || 0;
+        if (totalLessons > 0 && completedCount >= totalLessons) {
+          return {
+            type: 'course_completed',
+            title: `Completed: ${course.title}`,
+            courseId: course._id,
+            courseName: course.title,
+            thumbnail: course.thumbnail,
+            category: course.category,
+            lessonsCompleted: completedCount,
+            totalLessons,
+            earnedAt: p.updatedAt,
+          };
+        }
+        return null;
+      })
+    );
+
+    const passedAttempts = await QuizAttempt.find({
+      user: req.user._id,
+      status: 'submitted',
+      passed: true,
+    })
+      .populate('quiz', 'title passingScore')
+      .populate('course', 'title')
+      .sort({ submittedAt: -1 });
+
+    const passedQuizAchievements = passedAttempts.map((a) => ({
+      type: 'quiz_passed',
+      title: `Passed: ${a.quiz?.title || 'Quiz'}`,
+      quizId: a.quiz?._id,
+      quizTitle: a.quiz?.title,
+      score: a.score,
+      maxScore: a.maxScore,
+      percentage: a.percentage,
+      courseName: a.course?.title,
+      earnedAt: a.submittedAt,
+    }));
+
+    let taskAchievements = [];
+    try {
+      const TaskSubmission = (await import('../models/TaskSubmission.js')).default;
+      const gradedSubmissions = await TaskSubmission.find({
+        student: req.user._id,
+        status: 'graded',
+      })
+        .populate('task', 'title maxPoints course')
+        .populate({ path: 'task', populate: { path: 'course', select: 'title' } })
+        .sort({ gradedAt: -1 });
+
+      taskAchievements = gradedSubmissions.map((s) => ({
+        type: 'task_graded',
+        title: `Graded Task: ${s.task?.title || 'Practical Task'}`,
+        taskId: s.task?._id,
+        taskTitle: s.task?.title,
+        score: s.score,
+        maxPoints: s.task?.maxPoints,
+        feedback: s.feedback,
+        courseName: s.task?.course?.title,
+        earnedAt: s.gradedAt,
+      }));
+    } catch (e) {
+      // ignore
+    }
+
+    const allAchievements = [
+      ...completedCourseAchievements.filter(Boolean),
+      ...passedQuizAchievements,
+      ...taskAchievements,
+    ].sort((a, b) => new Date(b.earnedAt) - new Date(a.earnedAt));
+
+    res.json({
+      achievements: allAchievements,
+      summary: {
+        completedCourses: completedCourseAchievements.filter(Boolean).length,
+        passedQuizzes: passedAttempts.length,
+        gradedTasks: taskAchievements.length,
+        total: allAchievements.length,
+      },
+    });
+  } catch (error) {
+    console.error('Achievements error:', error);
+    res.status(500).json({ message: 'Error retrieving achievements: ' + error.message });
+  }
+});
+
 /**
  * Helper: Map learning minutes to color intensity level (0 = light/empty, 4 = dark)
  */
