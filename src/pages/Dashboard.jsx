@@ -1,10 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { fetchStudentProgress, fetchCourses } from '../services/api';
+import {
+  fetchStudentProgress,
+  fetchCourses,
+  fetchPersonalizedRecommendations,
+} from '../services/api';
 import ProgressBar from '../components/ProgressBar';
 import CourseCard from '../components/CourseCard';
-import StudentLearningCalendar from '../components/StudentLearningCalendar';
+
 import {
   BookOpen,
   CheckCircle,
@@ -15,6 +19,11 @@ import {
   Compass,
   Sparkles,
   ShieldCheck,
+  Zap,
+  Target,
+  Code2,
+  Briefcase,
+  Layers,
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -28,22 +37,29 @@ const Dashboard = () => {
   });
   const [enrolledCourses, setEnrolledCourses] = useState([]);
   const [featuredCourses, setFeaturedCourses] = useState([]);
+  const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadDashboardData = async () => {
       try {
         setLoading(true);
-        const [progressData, coursesData] = await Promise.all([
+        const [progressData, coursesData, recData] = await Promise.allSettled([
           fetchStudentProgress(),
           fetchCourses(),
+          fetchPersonalizedRecommendations(),
         ]);
 
-        if (progressData) {
-          setProgressSummary(progressData.summary || {});
-          setEnrolledCourses(progressData.progressList || []);
+        if (progressData.status === 'fulfilled' && progressData.value) {
+          setProgressSummary(progressData.value.summary || {});
+          setEnrolledCourses(progressData.value.progressList || []);
         }
-        setFeaturedCourses(coursesData ? coursesData.slice(0, 3) : []);
+        if (coursesData.status === 'fulfilled' && coursesData.value) {
+          setFeaturedCourses(coursesData.value.slice(0, 3));
+        }
+        if (recData.status === 'fulfilled' && recData.value) {
+          setRecommendations(recData.value);
+        }
       } catch (err) {
         console.error('Error loading dashboard:', err);
       } finally {
@@ -54,9 +70,11 @@ const Dashboard = () => {
     loadDashboardData();
   }, []);
 
+  const nextAction = recommendations?.immediateNextAction;
+
   return (
     <div className="space-y-10 font-sans">
-      {/* Welcome Hero Banner (Matching LearnHub Figma Design) */}
+      {/* Welcome Hero Banner */}
       <div className="relative rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-8 md:p-10 text-white overflow-hidden shadow-xl shadow-blue-600/10">
         <div className="relative z-10 space-y-3 max-w-2xl">
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-white text-xs font-semibold">
@@ -87,6 +105,34 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* ─── SLP-13: Next Best Step (What to Learn Next) ─── */}
+      {nextAction && (
+        <div className="bg-gradient-to-r from-indigo-900/10 via-purple-900/10 to-blue-900/10 border border-indigo-200/80 dark:border-indigo-500/20 rounded-2xl p-6 backdrop-blur-md shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="space-y-1.5">
+              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
+                <Zap className="w-3.5 h-3.5 fill-current" />
+                <span>Recommended Next Step For You</span>
+              </div>
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                {nextAction.title}
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {nextAction.reason} · {nextAction.subtitle}
+              </p>
+            </div>
+
+            <Link
+              to={nextAction.link}
+              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all shrink-0"
+            >
+              <span>{nextAction.type === 'continue_course' ? 'Resume Now' : 'Start Next Activity'}</span>
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Statistics Cards Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
@@ -147,10 +193,10 @@ const Dashboard = () => {
             <div className="h-40 bg-white rounded-2xl border border-slate-200 animate-pulse" />
           </div>
         ) : enrolledCourses.length === 0 ? (
-          <div className="bg-white border border-slate-200/80 p-8 rounded-2xl text-center space-y-3">
-            <Compass className="w-10 h-10 text-blue-600 mx-auto" />
-            <h3 className="text-base font-bold text-slate-900">You haven't started any courses yet</h3>
-            <p className="text-xs text-slate-500 max-w-md mx-auto">
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center bg-slate-50/50 space-y-3">
+            <Compass className="w-8 h-8 text-slate-400 mx-auto" />
+            <h3 className="text-sm font-bold text-slate-700">No Active Enrollments</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Browse our course catalog to get enrolled and kick off your technical learning journey.
             </p>
             <Link
@@ -208,12 +254,82 @@ const Dashboard = () => {
         )}
       </div>
 
+      {/* ─── SLP-13: Personalized Recommended Courses & Drills ─── */}
+      {recommendations?.nextCourses?.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-600" />
+                <h2 className="text-xl font-bold text-slate-900">Recommended Next For You</h2>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Curated based on your enrolled topics, skill tier, and learning velocity
+              </p>
+            </div>
+            <Link
+              to="/skill-learning"
+              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+            >
+              View Full Skill Path <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {recommendations.nextCourses.map((course) => (
+              <div key={course._id} className="relative group flex flex-col justify-between">
+                <CourseCard course={course} />
+                {course.recommendationReason && (
+                  <div className="mt-2 text-[11px] font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1 flex items-center gap-1">
+                    <Sparkles className="w-3 h-3 text-indigo-500 shrink-0" />
+                    <span className="truncate">{course.recommendationReason}</span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ─── SLP-13: Next Practice Problems ─── */}
+      {recommendations?.nextChallenges?.length > 0 && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                <Code2 className="w-4 h-4 text-emerald-600" />
+                Recommended Coding Practice
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Solve these questions to validate your understanding
+              </p>
+            </div>
+            <Link
+              to="/coding-challenges"
+              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+            >
+              Coding Arena <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {recommendations.nextChallenges.map((ch) => (
+              <ChallengeCard
+                key={ch._id}
+                challenge={ch}
+                matchReason={ch.recommendationReason}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Available Courses Showcase */}
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Popular Courses</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Recommended technical skill curricula</p>
+            <h2 className="text-xl font-bold text-slate-900">Explore All Courses</h2>
+            <p className="text-xs text-slate-500 mt-0.5">Explore our wide range of technical skill curricula</p>
           </div>
           <Link
             to="/courses"
