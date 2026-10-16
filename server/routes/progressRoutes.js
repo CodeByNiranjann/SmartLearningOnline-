@@ -1,5 +1,6 @@
 import express from 'express';
 import Progress from '../models/Progress.js';
+import LessonProgress from '../models/LessonProgress.js';
 import Lesson from '../models/Lesson.js';
 import Module from '../models/Module.js';
 import Course from '../models/Course.js';
@@ -378,10 +379,21 @@ router.get('/:courseId', protect, async (req, res) => {
       });
     }
 
+    const enrollment = await Enrollment.findOne({
+      userId: req.user._id,
+      courseId,
+      status: { $in: ['active', 'completed'] },
+    });
+
     const allLessons = await getCourseLessonsInOrder(courseId);
     let progress = await Progress.findOne({ userId: req.user._id, courseId })
       .populate('currentLesson')
       .populate('lastAccessedLesson');
+
+    let lessonProgressList = [];
+    if (enrollment) {
+      lessonProgressList = await LessonProgress.find({ enrollmentId: enrollment._id });
+    }
 
     if (!progress) {
       // Return initial resume state (first lesson in course)
@@ -389,11 +401,13 @@ router.get('/:courseId', protect, async (req, res) => {
       return res.json({
         userId: req.user._id,
         courseId,
+        enrollmentId: enrollment ? enrollment._id : null,
         completedLessons: [],
         currentLesson: firstLesson ? firstLesson._id : null,
         lastAccessedLesson: firstLesson ? firstLesson._id : null,
         resumeLessonId: firstLesson ? firstLesson._id : null,
         playbackProgress: [],
+        lessonProgress: lessonProgressList,
         progressPercentage: 0,
         isEnrolled: true,
       });
@@ -430,8 +444,18 @@ router.get('/:courseId', protect, async (req, res) => {
       }
     }
 
+    // If LessonProgress has a saved position, prioritize it
+    if (resumeLessonId && lessonProgressList.length > 0) {
+      const lp = lessonProgressList.find((p) => p.lessonId.toString() === resumeLessonId.toString());
+      if (lp && lp.status !== 'COMPLETED' && lp.lastPositionSeconds > 0) {
+        resumePlaybackSeconds = lp.lastPositionSeconds;
+      }
+    }
+
     res.json({
       ...progress.toObject(),
+      enrollmentId: enrollment ? enrollment._id : null,
+      lessonProgress: lessonProgressList,
       resumeLessonId,
       resumePlaybackSeconds,
       isEnrolled: true,
@@ -538,6 +562,32 @@ router.post('/complete-lesson', protect, async (req, res) => {
     }
 
     await progress.save();
+
+    // Sync LessonProgress entity for active enrollment
+    const userEnrollment = await Enrollment.findOne({
+      userId: req.user._id,
+      courseId,
+      status: { $in: ['active', 'completed'] },
+    });
+    if (userEnrollment) {
+      await LessonProgress.findOneAndUpdate(
+        { enrollmentId: userEnrollment._id, lessonId },
+        {
+          $set: {
+            status: 'COMPLETED',
+            progressPercentage: 100,
+            completedAt: new Date(),
+            lastAccessedAt: new Date(),
+          },
+          $setOnInsert: {
+            startedAt: new Date(),
+            lastPositionSeconds: 0,
+            durationSeconds: 0,
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
 
     // 5. Update course enrollment if 100% complete
     if (progress.progressPercentage === 100) {
@@ -782,6 +832,39 @@ router.post('/playback', protect, async (req, res) => {
     }
 
     await progress.save();
+
+    // Sync LessonProgress entity for active enrollment
+    const userEnrollment = await Enrollment.findOne({
+      userId: req.user._id,
+      courseId,
+      status: { $in: ['active', 'completed'] },
+    });
+    if (userEnrollment) {
+      const isThreshold = safeDuration > 0 && safePlayed >= Math.floor(safeDuration * 0.9);
+      const markComp = completed || isThreshold;
+      const existingLP = await LessonProgress.findOne({ enrollmentId: userEnrollment._id, lessonId });
+      const isAlreadyComp = existingLP && existingLP.status === 'COMPLETED';
+      const finalStatus = (isAlreadyComp || markComp) ? 'COMPLETED' : (safePlayed > 0 ? 'IN_PROGRESS' : 'NOT_STARTED');
+      const percent = finalStatus === 'COMPLETED' ? 100 : (safeDuration > 0 ? Math.min(100, Math.round((safePlayed / safeDuration) * 100)) : 0);
+
+      await LessonProgress.findOneAndUpdate(
+        { enrollmentId: userEnrollment._id, lessonId },
+        {
+          $set: {
+            status: finalStatus,
+            lastPositionSeconds: safePlayed,
+            durationSeconds: safeDuration,
+            progressPercentage: percent,
+            lastAccessedAt: new Date(),
+            completedAt: isAlreadyComp ? existingLP.completedAt : (markComp ? new Date() : null),
+          },
+          $setOnInsert: {
+            startedAt: new Date(),
+          },
+        },
+        { upsert: true, new: true, setDefaultsOnInsert: true }
+      );
+    }
 
     // Record study time into daily learning calendar
     if (safePlayed > 0) {

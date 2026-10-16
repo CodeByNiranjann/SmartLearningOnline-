@@ -10,6 +10,15 @@ import Review from './Review.js';
 import Certificate from './Certificate.js';
 import Session from './Session.js';
 import LearningActivity from './LearningActivity.js';
+import Project from './Project.js';
+import ProjectSubmission from './ProjectSubmission.js';
+import ProjectMilestone from './ProjectMilestone.js';
+import ProjectEnrollment from './ProjectEnrollment.js';
+import MilestoneProgress from './MilestoneProgress.js';
+import PracticalExercise from './PracticalExercise.js';
+import ExerciseSubmission from './ExerciseSubmission.js';
+
+import LessonProgress from './LessonProgress.js';
 
 export {
   User,
@@ -19,9 +28,17 @@ export {
   Resource,
   Progress,
   Enrollment,
+  LessonProgress,
   Quiz,
   Review,
   Certificate,
   Session,
   LearningActivity,
+  Project,
+  ProjectSubmission,
+  ProjectMilestone,
+  ProjectEnrollment,
+  MilestoneProgress,
+  PracticalExercise,
+  ExerciseSubmission,
 };
