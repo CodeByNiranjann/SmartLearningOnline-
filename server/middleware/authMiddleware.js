@@ -57,6 +57,10 @@ export const protect = async (req, res, next) => {
       return res.status(401).json({ message: 'User account not found' });
     }
 
+    if (user.isActive === false || user.status === 'deactivated') {
+      return res.status(401).json({ message: 'Account has been deactivated. Please contact an administrator.' });
+    }
+
     // Asynchronously update last active time for session tracking
     Session.updateOne({ _id: session._id }, { lastActiveAt: new Date() }).exec().catch(() => {});
 

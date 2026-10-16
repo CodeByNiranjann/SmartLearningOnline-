@@ -94,14 +94,14 @@ router.get('/stats', async (req, res) => {
 });
 
 // @route   GET /api/instructor/students
-// @desc    Get all students enrolled in courses taught by logged-in instructor
+// @desc    Get all students enrolled in courses taught by logged-in instructor with at-risk status
 // @access  Private (Instructor or Admin)
 router.get('/students', async (req, res) => {
   try {
     const instructorId = req.user._id;
 
     // Courses taught by instructor
-    const courses = await Course.find({ instructorId }).select('_id title category');
+    const courses = await Course.find(req.user.role === 'admin' ? {} : { instructorId }).select('_id title category');
     const courseIds = courses.map((c) => c._id);
 
     // Progress records for instructor's courses
@@ -111,21 +111,47 @@ router.get('/students', async (req, res) => {
       .populate('currentLesson', 'title')
       .sort({ updatedAt: -1 });
 
+    const now = new Date();
+
     const studentList = progressList
       .filter((p) => p.userId)
-      .map((p) => ({
-        id: p._id,
-        studentId: p.userId._id,
-        name: p.userId.name,
-        email: p.userId.email,
-        courseId: p.courseId?._id,
-        courseTitle: p.courseId?.title || 'Unknown Course',
-        courseCategory: p.courseId?.category || '',
-        currentLesson: p.currentLesson?.title || 'Not started',
-        completedLessonsCount: p.completedLessons?.length || 0,
-        progressPercentage: p.progressPercentage || 0,
-        lastActive: p.updatedAt,
-      }));
+      .map((p) => {
+        const lastActiveDate = new Date(p.updatedAt || p.lastAccessedAt || p.createdAt);
+        const daysInactive = Math.floor((now - lastActiveDate) / (1000 * 60 * 60 * 24));
+        const progress = p.progressPercentage || 0;
+
+        // At-risk rules:
+        // 1. Inactive for > 14 days and progress < 100%
+        // 2. Inactive for > 7 days with progress < 25%
+        // 3. Progress < 10% after 5 days of starting
+        let isAtRisk = false;
+        let riskReason = '';
+
+        if (progress < 100 && daysInactive >= 14) {
+          isAtRisk = true;
+          riskReason = `Inactive for ${daysInactive} days`;
+        } else if (progress < 25 && daysInactive >= 7) {
+          isAtRisk = true;
+          riskReason = `Low progress (${progress}%) and inactive for ${daysInactive} days`;
+        }
+
+        return {
+          id: p._id,
+          studentId: p.userId._id,
+          name: p.userId.name,
+          email: p.userId.email,
+          courseId: p.courseId?._id,
+          courseTitle: p.courseId?.title || 'Unknown Course',
+          courseCategory: p.courseId?.category || '',
+          currentLesson: p.currentLesson?.title || 'Not started',
+          completedLessonsCount: p.completedLessons?.length || 0,
+          progressPercentage: progress,
+          lastActive: p.updatedAt || p.lastAccessedAt || p.createdAt,
+          daysInactive,
+          isAtRisk,
+          riskReason,
+        };
+      });
 
     res.json(studentList);
   } catch (error) {

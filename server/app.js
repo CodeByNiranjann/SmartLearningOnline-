@@ -14,6 +14,9 @@ import internshipProjectRoutes from './routes/internshipProjectRoutes.js';
 import codingChallengeRoutes from './routes/codingChallengeRoutes.js';
 import skillLearningRoutes from './routes/skillLearningRoutes.js';
 import recommendationRoutes from './routes/recommendationRoutes.js';
+import resourceRoutes from './routes/resourceRoutes.js';
+import attemptRoutes from './routes/attemptRoutes.js';
+import taskRoutes from './routes/taskRoutes.js';
 
 dotenv.config();
 
@@ -25,6 +28,7 @@ app.use(cors({ origin: corsOrigin === '*' ? true : corsOrigin, credentials: true
 app.use(express.json());
 
 // Routes
+app.use('/api', resourceRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
 app.use('/api/modules', moduleRoutes);
@@ -33,6 +37,8 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/instructor', instructorRoutes);
 app.use('/api/quizzes', quizRoutes);
+app.use('/api/attempts', attemptRoutes);
+app.use('/api/tasks', taskRoutes);
 app.use('/api/internship-projects', internshipProjectRoutes);
 app.use('/api/coding-challenges', codingChallengeRoutes);
 app.use('/api/skill-learning', skillLearningRoutes);
