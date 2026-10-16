@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useParams, Link } from 'react-router-dom';
 import {
   fetchLessonDetails,
   fetchLessonResources,
@@ -33,7 +35,6 @@ import {
   Play,
   Maximize2,
   Minimize2,
-  Video,
   VideoOff,
   Clock,
   RotateCcw,
@@ -44,7 +45,6 @@ import {
   FileText,
   Menu,
   X,
-  Share2,
   GraduationCap,
   HelpCircle,
   Check,
@@ -118,7 +118,6 @@ const getExperimentFormatGuidance = (exerciseType) => {
 
 const Lesson = () => {
   const { courseId, lessonId } = useParams();
-  const navigate = useNavigate();
 
   const [lessonData, setLessonData] = useState(null);
   const [resources, setResources] = useState([]);
@@ -149,10 +148,16 @@ const Lesson = () => {
   const currentPositionRef = useRef(0);
   const currentDurationRef = useRef(0);
   const isCompletedRef = useRef(false);
+  // Quiz states
+  const [quiz, setQuiz] = useState(null);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizResult, setQuizResult] = useState(null);
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  const [quizError, setQuizError] = useState('');
 
   // Player & UI states
   const [theaterMode, setTheaterMode] = useState(false);
-  const [activeTab, setActiveTab] = useState('curriculum'); // 'curriculum' | 'resources' | 'notes'
+  const [activeTab, setActiveTab] = useState('curriculum'); // 'curriculum' | 'resources'
   const [mobileCurriculumOpen, setMobileCurriculumOpen] = useState(false);
   const [videoPlaybackStarted, setVideoPlaybackStarted] = useState(false);
   const [videoError, setVideoError] = useState(false);
@@ -286,6 +291,12 @@ const Lesson = () => {
       setQuizAnswers({});
 
       const [details, resList, progressData, quizData, exData] = await Promise.all([
+      setResumeSeconds(0);
+      setQuizResult(null);
+      setQuizAnswers({});
+      setQuizError('');
+
+      const [details, resList, progressData, quizData] = await Promise.all([
         fetchLessonDetails(lessonId),
         fetchLessonResources(lessonId),
         fetchCourseProgress(courseId).catch((err) => {
@@ -401,6 +412,7 @@ const Lesson = () => {
 
   useEffect(() => {
     loadLessonData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [courseId, lessonId]);
 
   // Track active study minutes on website for calendar heatmap
@@ -438,7 +450,9 @@ const Lesson = () => {
 
     // 3. Attached Video resource
     if (resources && resources.length > 0) {
-      const videoResource = resources.find((r) => r.type === 'Video' || (r.url && extractYouTubeId(r.url)));
+      const videoResource = resources.find(
+        (r) => r.type === 'Video' || (r.url && extractYouTubeId(r.url))
+      );
       if (videoResource?.url) {
         const id = extractYouTubeId(videoResource.url);
         if (id) return id;
@@ -448,6 +462,7 @@ const Lesson = () => {
     return null;
   }, [lessonData, resources]);
 
+  // ─── Quiz handlers ───
   const handleQuizAnswerSelect = (questionId, optionIndex) => {
     setQuizAnswers((prev) => ({
       ...prev,
@@ -474,7 +489,7 @@ const Lesson = () => {
       setQuizError('');
       const result = await submitQuiz(quiz._id, formattedAnswers);
       setQuizResult(result);
-      if (result.passed && !isCompleted) {
+      if (result.passed && !isCompleted && !notEnrolled) {
         // Auto-mark lesson complete on passing quiz
         handleMarkComplete();
       }
@@ -601,11 +616,22 @@ const Lesson = () => {
         `lesson_playback_${lessonId}`,
         JSON.stringify({ started: true, completed: true, timestamp: Date.now() })
       );
+      // Persist in localStorage and update playback state
+      try {
+        localStorage.setItem(
+          `lesson_playback_${lessonId}`,
+          JSON.stringify({ started: true, completed: true, timestamp: Date.now() })
+        );
+      } catch (e) {
+        // ignore localStorage errors
+      }
 
       setTimeout(() => setSuccessMsg(''), 5000);
     } catch (err) {
       console.error('Error marking lesson complete:', err);
-      const msg = err.response?.data?.message || 'Could not update lesson progress. Please check your connection.';
+      const msg =
+        err.response?.data?.message ||
+        'Could not update lesson progress. Please check your connection.';
       setError(msg);
       setSaveError(msg);
     } finally {
@@ -660,10 +686,14 @@ const Lesson = () => {
   // Record playback start and sync with backend
   const handleVideoStart = async () => {
     setVideoPlaybackStarted(true);
-    localStorage.setItem(
-      `lesson_playback_${lessonId}`,
-      JSON.stringify({ started: true, timestamp: Date.now() })
-    );
+    try {
+      localStorage.setItem(
+        `lesson_playback_${lessonId}`,
+        JSON.stringify({ started: true, timestamp: Date.now() })
+      );
+    } catch (e) {
+      // ignore localStorage errors
+    }
 
     if (resumeSeconds > 0 && ytPlayerRef.current?.seekTo) {
       try {
@@ -846,7 +876,16 @@ const Lesson = () => {
     );
   }
 
-  const { lesson, prevLessonId, prevLessonTitle, nextLessonId, nextLessonTitle, totalCourseLessons, currentLessonIndex, modules } = lessonData;
+  const {
+    lesson,
+    prevLessonId,
+    prevLessonTitle,
+    nextLessonId,
+    nextLessonTitle,
+    totalCourseLessons,
+    currentLessonIndex,
+    modules,
+  } = lessonData;
 
   const currentModule = modules?.find((m) => m._id?.toString() === lesson.moduleId?.toString());
   const currentModuleLessons = currentModule?.lessons || [];
@@ -874,7 +913,10 @@ const Lesson = () => {
           {currentModule && (
             <>
               <span className="text-slate-300 hidden sm:inline">|</span>
-              <span className="text-xs text-slate-600 font-medium truncate max-w-[200px] hidden sm:inline" title={currentModule.title}>
+              <span
+                className="text-xs text-slate-600 font-medium truncate max-w-[200px] hidden sm:inline"
+                title={currentModule.title}
+              >
                 {currentModule.title}
               </span>
             </>
@@ -903,9 +945,13 @@ const Lesson = () => {
             title={theaterMode ? 'Normal View' : 'Theater Mode (Wide)'}
           >
             {theaterMode ? (
-              <><Minimize2 className="w-3.5 h-3.5" /> Normal View</>
+              <>
+                <Minimize2 className="w-3.5 h-3.5" /> Normal View
+              </>
             ) : (
-              <><Maximize2 className="w-3.5 h-3.5" /> Theater Mode</>
+              <>
+                <Maximize2 className="w-3.5 h-3.5" /> Theater Mode
+              </>
             )}
           </button>
 
@@ -969,7 +1015,9 @@ const Lesson = () => {
                 <iframe
                   id="lesson-youtube-player-frame"
                   className="w-full h-full border-0"
-                  src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?enablejsapi=1&rel=0&modestbranding=1&playsinline=1${resumeSeconds > 0 ? `&start=${resumeSeconds}` : ''}`}
+                  src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?enablejsapi=1&rel=0&modestbranding=1&playsinline=1${
+                    resumeSeconds > 0 ? `&start=${Math.floor(resumeSeconds)}` : ''
+                  }`}
                   title={lesson.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen
@@ -984,9 +1032,7 @@ const Lesson = () => {
                   <VideoOff className="w-8 h-8" />
                 </div>
                 <div className="max-w-md space-y-1.5">
-                  <h3 className="text-lg font-bold tracking-tight text-white">
-                    Video Stream Unavailable
-                  </h3>
+                  <h3 className="text-lg font-bold tracking-tight text-white">Video Stream Unavailable</h3>
                   <p className="text-xs text-slate-300 leading-relaxed">
                     A dedicated video stream is not attached to this lesson yet or is temporarily offline. All lesson concepts and instructions are provided in the structured reading notes below.
                   </p>
@@ -1137,12 +1183,15 @@ const Lesson = () => {
                     </div>
                   ))
                 ) : (
-                  <p className="text-xs text-slate-400 italic">No additional reading notes provided for this lesson.</p>
+                  <p className="text-xs text-slate-400 italic">
+                    No additional reading notes provided for this lesson.
+                  </p>
                 )}
               </div>
             </div>
 
             {/* ─── Knowledge Check Assessment (SLP-17 & SLP-18) ─── */}
+            {/* ─── Knowledge Check Assessment ─── */}
             {quiz && (
               <div className="mt-8 pt-8 border-t border-slate-200/80 space-y-6">
                 <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1165,7 +1214,10 @@ const Lesson = () => {
                 </div>
 
                 {quizError && (
-                  <div role="alert" className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
+                  <div
+                    role="alert"
+                    className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2"
+                  >
                     <AlertCircle className="w-4 h-4 shrink-0 text-rose-600" />
                     <span>{quizError}</span>
                   </div>
@@ -1175,7 +1227,10 @@ const Lesson = () => {
                   /* Quiz Taking Form */
                   <form onSubmit={handleSubmitQuiz} className="space-y-6">
                     {quiz.questions.map((q, qIdx) => (
-                      <fieldset key={q._id || qIdx} className="p-4 md:p-5 rounded-2xl bg-slate-50/60 border border-slate-200/80 space-y-3">
+                      <fieldset
+                        key={q._id || qIdx}
+                        className="p-4 md:p-5 rounded-2xl bg-slate-50/60 border border-slate-200/80 space-y-3"
+                      >
                         <legend className="text-xs md:text-sm font-bold text-slate-800 px-1">
                           Question {qIdx + 1}: {q.questionText}
                         </legend>
@@ -1240,9 +1295,7 @@ const Lesson = () => {
                         </div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="font-extrabold text-lg">
-                              Score: {quizResult.score}%
-                            </span>
+                            <span className="font-extrabold text-lg">Score: {quizResult.score}%</span>
                             <span
                               className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${
                                 quizResult.passed
@@ -1254,7 +1307,8 @@ const Lesson = () => {
                             </span>
                           </div>
                           <p className="text-xs opacity-90 mt-0.5">
-                            {quizResult.correctCount} of {quizResult.totalQuestions} questions correct (Passing: {quizResult.passingScore}%)
+                            {quizResult.correctCount} of {quizResult.totalQuestions} questions correct (Passing:{' '}
+                            {quizResult.passingScore}%)
                           </p>
                         </div>
                       </div>
@@ -1298,7 +1352,9 @@ const Lesson = () => {
                           </div>
                           <p className="text-slate-600">
                             <strong>Your Answer:</strong>{' '}
-                            {item.selectedOptionIndex !== null ? item.options[item.selectedOptionIndex] : 'Not answered'}
+                            {item.selectedOptionIndex !== null && item.selectedOptionIndex !== undefined
+                              ? item.options[item.selectedOptionIndex]
+                              : 'Not answered'}
                           </p>
                           {!item.isCorrect && (
                             <p className="text-emerald-700 font-medium">
@@ -1871,9 +1927,7 @@ const Lesson = () => {
                     );
                   })
                 ) : (
-                  <p className="text-xs text-slate-400 text-center py-6">
-                    No curriculum modules found.
-                  </p>
+                  <p className="text-xs text-slate-400 text-center py-6">No curriculum modules found.</p>
                 )}
               </div>
             )}
@@ -1976,6 +2030,8 @@ const Lesson = () => {
                                 {lp?.progressPercentage || 0}%
                               </span>
                             ) : null}
+                            <span className="shrink-0 text-[10px]">{isLesCompleted ? '✓' : lesIdx + 1}</span>
+                            <span className="truncate flex-1">{les.title}</span>
                           </Link>
                         );
                       })}

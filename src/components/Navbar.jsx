@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, LogOut, User, Menu, X, LayoutDashboard, Compass, GraduationCap, ShieldCheck, Settings, Sparkles, FolderGit2, Code2 } from 'lucide-react';
+import { BookOpen, LogOut, User, Menu, X, LayoutDashboard, Compass, GraduationCap, ShieldCheck, Settings, Sparkles, Briefcase, Code2, Target } from 'lucide-react';
 
 const Navbar = () => {
   const { user, isAuthenticated, logout } = useAuth();
@@ -19,6 +20,9 @@ const Navbar = () => {
     { name: 'Courses', path: '/courses', icon: Compass, protected: false },
     { name: 'Projects', path: '/projects', icon: FolderGit2, protected: false },
     { name: 'Exercises', path: '/exercises', icon: Code2, protected: false },
+    { name: 'Projects', path: '/internship-projects', icon: Briefcase, protected: false },
+    { name: 'Coding Arena', path: '/coding-challenges', icon: Code2, protected: false },
+    { name: 'Skill Tracks', path: '/skill-learning', icon: Target, protected: true },
     { name: 'My Learning', path: '/my-learning', icon: GraduationCap, protected: true },
     { name: 'Profile & 2FA', path: '/profile', icon: User, protected: true },
     // Management links — only Admin has Manage Settings; Instructors have Instructor Hub
