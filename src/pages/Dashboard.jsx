@@ -8,6 +8,7 @@ import {
 } from '../services/api';
 import ProgressBar from '../components/ProgressBar';
 import CourseCard from '../components/CourseCard';
+import StudentLearningCalendar from '../components/StudentLearningCalendar';
 
 import {
   BookOpen,
