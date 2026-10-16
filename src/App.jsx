@@ -17,7 +17,7 @@ import Lesson from './pages/Lesson';
 import MyLearning from './pages/MyLearning';
 import Profile from './pages/Profile';
 import InternshipProjects from './pages/InternshipProjects';
-import ProjectDetails from './pages/ProjectDetails';
+
 import CodingChallenges from './pages/CodingChallenges';
 import ChallengeDetails from './pages/ChallengeDetails';
 import SkillLearning from './pages/SkillLearning';
