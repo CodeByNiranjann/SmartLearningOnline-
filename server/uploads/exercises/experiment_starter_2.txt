@@ -1,0 +1,6 @@
+// === Exercise 2: Building an Idempotent REST API Controller in Express & MongoDB ===
+// Starter template
+function solution() {
+  // TODO: Implement solution
+}
+module.exports = { solution };

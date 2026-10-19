@@ -95,3 +95,39 @@ Base URL: `http://localhost:5000/api`
 | Method | Endpoint | Access | Description |
 | :--- | :--- | :---: | :--- |
 | `GET` | `/health` | Public | Returns `{ status: "healthy", uptime: <seconds>, timestamp: <iso> }`. |
+
+---
+
+## 8. Real-World Projects Endpoints (`/api/projects`) (SLP-6)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :---: | :--- |
+| `GET` | `/api/projects` | Public / Optional Auth | List real-world capstone projects (supports `?difficulty=`, `?category=`, `?courseId=`, `?search=`). Attaches student submission status if logged in. |
+| `GET` | `/api/projects/:id` | Public / Optional Auth | Get comprehensive project brief, deliverables checklist, starter templates, and evaluation rubric. |
+| `GET` | `/api/projects/course/:courseId` | Public / Optional Auth | Get practical real-world projects associated with a specific course curriculum. |
+| `POST` | `/api/projects/:id/submit` | Protected | Submit or update project solution: `{ githubUrl, liveDemoUrl, notes }`. Validates URL formats. |
+| `GET` | `/api/projects/:id/my-submission` | Protected | Retrieve authenticated student's submission, status, grade, and instructor evaluation feedback. |
+| `POST` | `/api/projects` | Instructor / Admin | Create a new practical project with deliverables, tech stack, and evaluation rubric. |
+| `PUT` | `/api/projects/:id` | Owner / Admin | Update project specifications or rubric criteria. |
+| `DELETE` | `/api/projects/:id` | Owner / Admin | Delete project and associated student submissions. |
+| `GET` | `/api/projects/:id/submissions` | Instructor / Admin | List all student submissions for a project. |
+| `PUT` | `/api/projects/:id/submissions/:submissionId/grade` | Instructor / Admin | Grade student submission with score (0-100), rubric points breakdown, and feedback. |
+
+---
+
+## 9. Practical Exercises Endpoints (`/api/exercises`) (Sprint 2)
+
+| Method | Endpoint | Access | Description |
+| :--- | :--- | :---: | :--- |
+| `GET` | `/api/exercises` | Public / Optional Auth | List published exercises (or Draft/Published for managers) with filters (`?courseId=`, `?moduleId=`, `?lessonId=`, `?difficulty=`, `?exerciseType=`, `?search=`, `?status=`). Attaches learner submission status. |
+| `GET` | `/api/exercises/:exerciseId` | Public / Optional Auth | Get exercise details and instructions. Draft exercises viewable only by course owner or admin. Attaches learner submission and attempt history. |
+| `POST` | `/api/courses/:courseId/exercises` | Owner / Admin | Create a practical exercise (`title`, `description`, `instructions`, `exerciseType`, `difficulty`, `estimatedMinutes`, `maximumMarks`, `passingMarks`, `dueDate`, `referenceMaterials`, `status`, `starterCode`). Validates course ownership and verifies selected module and lesson belong strictly to the course. |
+| `PUT` | `/api/exercises/:exerciseId` | Owner / Admin | Update practical exercise metadata, instructions, or publishing status. Enforces course ownership and module/lesson hierarchy integrity. |
+| `DELETE` | `/api/exercises/:exerciseId` | Owner / Admin | Delete exercise, all student submissions, and uploaded files from storage. |
+| `POST` | `/api/exercises/:exerciseId/submissions` | Enrolled Learner | Submit exercise solution via `multipart/form-data` or JSON. Supports `textAnswer`, source code, and safe file uploads (`file`, max 10MB, extension allowlist). Supports saving drafts (`submissionStatus: "In Progress"`). Snapshots previous attempts to `history` array on resubmission. Requires active course enrollment. |
+| `GET` | `/api/exercises/:exerciseId/submissions/me` | Enrolled Learner | Retrieve authenticated learner's submission, current status, marks, feedback, and full attempt history audit trail. |
+| `GET` | `/api/exercises/:exerciseId/submissions` | Owner / Admin | List all learner submissions for an exercise with student metadata and attempt counts. |
+| `PATCH` | `/api/submissions/:submissionId/review` | Owner / Admin | Review and grade submission (`marksAwarded`, `reviewerFeedback`, `submissionStatus: "Accepted"` or `"Needs Revision"`). Validates `0 <= marksAwarded <= maximumMarks`. |
+| `GET` | `/api/submissions/:submissionId/file` | Learner / Owner / Admin | Stream/download uploaded submission file. Prevents unauthorized file access and path traversal. |
+
+

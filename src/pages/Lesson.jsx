@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   fetchLessonDetails,
   fetchLessonResources,
@@ -11,6 +11,15 @@ import {
   logStudyTime,
   fetchLessonQuiz,
   submitQuiz,
+  fetchLessonExercises,
+  submitExercise,
+  getExerciseSubmissionFileUrl,
+  getExerciseAttachmentUrl,
+  fetchLessonProgress,
+  updateLessonProgress,
+  markLessonComplete,
+  fetchEnrollmentProgress,
+  fetchCourseEnrollment,
 } from '../services/api';
 import ResourceCard from '../components/ResourceCard';
 import {
@@ -28,6 +37,9 @@ import {
   Clock,
   RotateCcw,
   ExternalLink,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
   FileText,
   Menu,
   X,
@@ -35,6 +47,16 @@ import {
   HelpCircle,
   Check,
   Award,
+  Code2,
+  UploadCloud,
+  Download,
+  FileCode,
+  Paperclip,
+  Send,
+  Save,
+  Loader2,
+  RefreshCw,
+  FolderGit2,
 } from 'lucide-react';
 
 // Extract YouTube ID from any format (standard, short, embed, shorts)
@@ -52,24 +74,78 @@ const formatSeconds = (sec) => {
   return `${m}:${s < 10 ? '0' : ''}${s}`;
 };
 
+const getExperimentFormatGuidance = (exerciseType) => {
+  switch (exerciseType) {
+    case 'Coding Exercise':
+      return {
+        accept: '.js,.jsx,.ts,.tsx,.py,.java,.cpp,.c,.cs,.html,.css,.json,.zip',
+        label: 'Source Code or Archive',
+        badge: '.js, .py, .java, .cpp, .html, .css, .zip',
+        description: 'Upload your completed code file (.js, .py, etc.) or compressed archive (.zip) for this experiment.',
+      };
+    case 'File Upload':
+      return {
+        accept: '.pdf,.txt,.zip,.doc,.docx',
+        label: 'Lab Document or Report',
+        badge: '.pdf, .txt, .zip, .docx',
+        description: 'Upload your lab report, experiment documentation, or solution package.',
+      };
+    case 'Project Task':
+      return {
+        accept: '.zip,.pdf,.tar.gz,.js,.py,.html',
+        label: 'Project Deliverable',
+        badge: '.zip, .pdf, .tar.gz, source files',
+        description: 'Upload your completed project package (.zip), architectural diagram (.pdf), or source files.',
+      };
+    case 'Text Answer':
+      return {
+        accept: '.txt,.pdf,.md',
+        label: 'Answer Document',
+        badge: '.txt, .md, .pdf or text',
+        description: 'Submit an answer file (.txt, .md, .pdf) or write your solution in the answer box.',
+      };
+    default:
+      return {
+        accept: '.pdf,.txt,.zip,.js,.py',
+        label: 'Experiment Solution File',
+        badge: '.pdf, .txt, .zip, source files',
+        description: 'Upload your experiment solution file (up to 10 MB limit).',
+      };
+  }
+};
+
 const Lesson = () => {
   const { courseId, lessonId } = useParams();
 
   const [lessonData, setLessonData] = useState(null);
   const [resources, setResources] = useState([]);
   const [completedLessonIds, setCompletedLessonIds] = useState([]);
+  const [exercises, setExercises] = useState([]);
+  const [quiz, setQuiz] = useState(null);
+  const [quizAnswers, setQuizAnswers] = useState({});
+  const [quizResult, setQuizResult] = useState(null);
+  const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  const [quizError, setQuizError] = useState('');
   const [isCompleted, setIsCompleted] = useState(false);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Quiz states
-  const [quiz, setQuiz] = useState(null);
-  const [quizAnswers, setQuizAnswers] = useState({});
-  const [quizResult, setQuizResult] = useState(null);
-  const [submittingQuiz, setSubmittingQuiz] = useState(false);
-  const [quizError, setQuizError] = useState('');
+  // Enrollment-scoped persistent progress tracking (SLP-10)
+  const [enrollmentId, setEnrollmentId] = useState(null);
+  const [lessonProgress, setLessonProgress] = useState(null);
+  const [enrollmentLessonMap, setEnrollmentLessonMap] = useState({});
+  const [progressRestoring, setProgressRestoring] = useState(false);
+  const [savingProgress, setSavingProgress] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [lastSavedPosition, setLastSavedPosition] = useState(0);
+
+  // References for playback tracking & safe periodic updates
+  const ytPlayerRef = useRef(null);
+  const currentPositionRef = useRef(0);
+  const currentDurationRef = useRef(0);
+  const isCompletedRef = useRef(false);
 
   // Player & UI states
   const [theaterMode, setTheaterMode] = useState(false);
@@ -81,6 +157,121 @@ const Lesson = () => {
   const [notEnrolled, setNotEnrolled] = useState(false);
   const [enrolling, setEnrolling] = useState(false);
 
+  // Experiment File Upload & Solution State
+  const [activeUploadExId, setActiveUploadExId] = useState(null);
+  const [uploadFiles, setUploadFiles] = useState({});
+  const [uploadTexts, setUploadTexts] = useState({});
+  const [uploadingState, setUploadingState] = useState({});
+  const [uploadError, setUploadError] = useState({});
+  const [uploadSuccess, setUploadSuccess] = useState({});
+
+  const handleFileSelection = (exId, file) => {
+    setUploadError((prev) => ({ ...prev, [exId]: '' }));
+    if (!file) {
+      setUploadFiles((prev) => {
+        const copy = { ...prev };
+        delete copy[exId];
+        return copy;
+      });
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setUploadError((prev) => ({
+        ...prev,
+        [exId]: 'File exceeds the 10 MB limit. Please select a smaller file.',
+      }));
+      return;
+    }
+
+    setUploadFiles((prev) => ({ ...prev, [exId]: file }));
+  };
+
+  const handleExperimentFileUpload = async (exercise, saveAsDraft = false) => {
+    const exId = exercise._id;
+    const file = uploadFiles[exId];
+    const text = uploadTexts[exId] || '';
+
+    setUploadError((prev) => ({ ...prev, [exId]: '' }));
+    setUploadSuccess((prev) => ({ ...prev, [exId]: '' }));
+
+    if (!saveAsDraft) {
+      if (exercise.exerciseType === 'File Upload' && !file && !exercise.mySubmission?.fileReference) {
+        setUploadError((prev) => ({
+          ...prev,
+          [exId]: 'Please select a file to upload for this experiment.',
+        }));
+        return;
+      }
+      if (exercise.exerciseType === 'Text Answer' && !text.trim() && !file) {
+        setUploadError((prev) => ({
+          ...prev,
+          [exId]: 'Please provide your text answer or upload an answer document.',
+        }));
+        return;
+      }
+      if (!file && !text.trim() && !exercise.mySubmission) {
+        setUploadError((prev) => ({
+          ...prev,
+          [exId]: 'Please upload your experiment file or enter your solution before submitting.',
+        }));
+        return;
+      }
+    }
+
+    try {
+      setUploadingState((prev) => ({ ...prev, [exId]: true }));
+      const formData = new FormData();
+      if (file) {
+        formData.append('file', file);
+      }
+      if (text.trim()) {
+        formData.append('textAnswer', text.trim());
+      }
+      if (saveAsDraft) {
+        formData.append('saveAsDraft', 'true');
+      }
+
+      const res = await submitExercise(exId, formData);
+      setUploadSuccess((prev) => ({
+        ...prev,
+        [exId]: saveAsDraft ? 'Draft saved successfully!' : 'Experiment solution submitted successfully!',
+      }));
+
+      // Update exercise list locally
+      setExercises((prevList) =>
+        prevList.map((item) => {
+          if (item._id === exId) {
+            return {
+              ...item,
+              mySubmission: res.submission,
+            };
+          }
+          return item;
+        })
+      );
+
+      // Clean up selected file
+      setUploadFiles((prev) => {
+        const copy = { ...prev };
+        delete copy[exId];
+        return copy;
+      });
+
+      setTimeout(() => {
+        setUploadSuccess((prev) => ({ ...prev, [exId]: '' }));
+      }, 5000);
+    } catch (err) {
+      console.error('Experiment upload error:', err);
+      setUploadError((prev) => ({
+        ...prev,
+        [exId]: err.response?.data?.message || 'Failed to submit experiment file. Please check file format and size.',
+      }));
+    } finally {
+      setUploadingState((prev) => ({ ...prev, [exId]: false }));
+    }
+  };
+
   // Load lesson data, resources, quiz, and student progress
   const loadLessonData = async () => {
     try {
@@ -88,12 +279,12 @@ const Lesson = () => {
       setError('');
       setSuccessMsg('');
       setVideoError(false);
-      setResumeSeconds(0);
       setQuizResult(null);
       setQuizAnswers({});
       setQuizError('');
+      setResumeSeconds(0);
 
-      const [details, resList, progressData, quizData] = await Promise.all([
+      const [details, resList, progressData, quizData, exData] = await Promise.all([
         fetchLessonDetails(lessonId),
         fetchLessonResources(lessonId),
         fetchCourseProgress(courseId).catch((err) => {
@@ -103,11 +294,13 @@ const Lesson = () => {
           return null;
         }),
         fetchLessonQuiz(lessonId).catch(() => null),
+        fetchLessonExercises(lessonId).catch(() => ({ exercises: [] })),
       ]);
 
       setLessonData(details);
       setResources(resList || []);
       setQuiz(quizData);
+      setExercises(exData?.exercises || []);
 
       if (progressData) {
         setNotEnrolled(false);
@@ -116,16 +309,72 @@ const Lesson = () => {
           typeof id === 'object' && id?._id ? id._id.toString() : id?.toString()
         );
         setCompletedLessonIds(completedIds);
-        setIsCompleted(completedIds.includes(lessonId?.toString()));
+        const isComp = completedIds.includes(lessonId?.toString());
+        setIsCompleted(isComp);
+        isCompletedRef.current = isComp;
 
-        // Restore playback resume position if available
+        // Restore playback resume position if available from progress
         if (Array.isArray(progressData.playbackProgress)) {
           const pb = progressData.playbackProgress.find(
             (p) => p.lessonId?.toString() === lessonId.toString()
           );
-          if (pb && pb.playedSeconds > 10 && !pb.completed) {
+          if (pb && pb.playedSeconds > 0 && !pb.completed) {
             setResumeSeconds(pb.playedSeconds);
+            setLastSavedPosition(pb.playedSeconds);
+            currentPositionRef.current = pb.playedSeconds;
           }
+        }
+      }
+
+      // Check enrollment-scoped LessonProgress (SLP-10)
+      let enrId = progressData?.enrollmentId;
+      if (!enrId) {
+        try {
+          const enrStatus = await fetchCourseEnrollment(courseId);
+          if (enrStatus?.enrollment?._id) {
+            enrId = enrStatus.enrollment._id;
+          }
+        } catch (e) {
+          // not enrolled
+        }
+      }
+
+      if (enrId) {
+        setEnrollmentId(enrId);
+        setProgressRestoring(true);
+        try {
+          const [lp, ep] = await Promise.all([
+            fetchLessonProgress(enrId, lessonId).catch(() => null),
+            fetchEnrollmentProgress(enrId).catch(() => null),
+          ]);
+
+          if (lp) {
+            setLessonProgress(lp);
+            if (lp.status === 'COMPLETED') {
+              setIsCompleted(true);
+              isCompletedRef.current = true;
+            }
+            if (lp.lastPositionSeconds > 0 && lp.status !== 'COMPLETED') {
+              setResumeSeconds(lp.lastPositionSeconds);
+              setLastSavedPosition(lp.lastPositionSeconds);
+              currentPositionRef.current = lp.lastPositionSeconds;
+            }
+            if (lp.durationSeconds > 0) {
+              currentDurationRef.current = lp.durationSeconds;
+            }
+          }
+
+          if (ep && Array.isArray(ep.lessons)) {
+            const map = {};
+            for (const item of ep.lessons) {
+              map[item.lessonId.toString()] = item;
+            }
+            setEnrollmentLessonMap(map);
+          }
+        } catch (e) {
+          console.warn('Could not restore lesson progress from enrollment:', e);
+        } finally {
+          setProgressRestoring(false);
         }
       }
 
@@ -246,25 +495,115 @@ const Lesson = () => {
     setQuizError('');
   };
 
+  // ─── Playback Progress Persistence & Synchronization (SLP-10) ───────────
+  const savePlaybackProgress = useCallback(
+    async ({ position, duration, completed: markComplete = false }) => {
+      const safePos = Math.max(0, Math.round(Number(position) || 0));
+      const safeDur = Math.max(0, Math.round(Number(duration) || 0));
+
+      currentPositionRef.current = safePos;
+      if (safeDur > 0) currentDurationRef.current = safeDur;
+
+      if (!notEnrolled && enrollmentId) {
+        try {
+          setSavingProgress(true);
+          setSaveError('');
+          const updated = await updateLessonProgress(enrollmentId, lessonId, {
+            last_position_seconds: safePos,
+            duration_seconds: safeDur,
+            completed: Boolean(markComplete),
+          });
+
+          setLessonProgress(updated);
+          setLastSavedPosition(updated.lastPositionSeconds || safePos);
+
+          if (updated.status === 'COMPLETED') {
+            setIsCompleted(true);
+            isCompletedRef.current = true;
+            setCompletedLessonIds((prev) => Array.from(new Set([...prev, lessonId.toString()])));
+          }
+
+          setEnrollmentLessonMap((prev) => ({
+            ...prev,
+            [lessonId.toString()]: updated,
+          }));
+        } catch (err) {
+          console.error('Error saving playback progress:', err);
+          setSaveError('Progress save failed. Retrying...');
+          setTimeout(() => {
+            if (enrollmentId) {
+              updateLessonProgress(enrollmentId, lessonId, {
+                last_position_seconds: safePos,
+                duration_seconds: safeDur,
+                completed: Boolean(markComplete),
+              })
+                .then((res) => {
+                  setSaveError('');
+                  setLessonProgress(res);
+                })
+                .catch(() => {
+                  setSaveError('Progress could not be saved to server. Click Retry.');
+                });
+            }
+          }, 5000);
+        } finally {
+          setSavingProgress(false);
+        }
+      } else if (!notEnrolled && courseId) {
+        // Fallback to legacy playback route if enrollmentId is still resolving
+        try {
+          await updatePlaybackProgress({
+            courseId,
+            lessonId,
+            playedSeconds: safePos,
+            durationSeconds: safeDur,
+            completed: markComplete,
+          });
+        } catch (e) {
+          // silent fallback
+        }
+      }
+    },
+    [enrollmentId, notEnrolled, courseId, lessonId]
+  );
+
   // Handle Mark Lesson Complete (Idempotent and scoped to enrollment)
   const handleMarkComplete = async () => {
     try {
       setCompleting(true);
       setError('');
-      const res = await completeLesson(courseId, lessonId);
+      setSaveError('');
+
+      let res;
+      if (enrollmentId) {
+        res = await markLessonComplete(enrollmentId, lessonId);
+      } else {
+        res = await completeLesson(courseId, lessonId);
+      }
+
       setIsCompleted(true);
+      isCompletedRef.current = true;
       setCompletedLessonIds((prev) => Array.from(new Set([...prev, lessonId.toString()])));
 
-      if (res?.isModuleCompleted) {
-        setSuccessMsg(
-          `🎉 Module Completed! You have completed all lessons in "${res.completedModuleTitle || 'this module'}"!`
-        );
-      } else if (res?.isAlreadyCompleted) {
+      if (res?.progress) {
+        setLessonProgress(res.progress);
+        setEnrollmentLessonMap((prev) => ({
+          ...prev,
+          [lessonId.toString()]: res.progress,
+        }));
+      }
+
+      if (res?.isAlreadyCompleted) {
         setSuccessMsg('Lesson was already marked as complete (idempotent). Progress maintained.');
       } else {
         setSuccessMsg('Lesson completed successfully! Progress saved.');
       }
 
+      // Persist in localStorage as secondary backup
+      localStorage.setItem(
+        `lesson_playback_${lessonId}`,
+        JSON.stringify({ started: true, completed: true, timestamp: Date.now() })
+      );
       // Persist in localStorage and update playback state
       try {
         localStorage.setItem(
@@ -275,7 +614,6 @@ const Lesson = () => {
         // ignore localStorage errors
       }
 
-      // Auto-clear notification after 5s
       setTimeout(() => setSuccessMsg(''), 5000);
     } catch (err) {
       console.error('Error marking lesson complete:', err);
@@ -283,6 +621,7 @@ const Lesson = () => {
         err.response?.data?.message ||
         'Could not update lesson progress. Please check your connection.';
       setError(msg);
+      setSaveError(msg);
     } finally {
       setCompleting(false);
     }
@@ -302,6 +641,7 @@ const Lesson = () => {
 
       if (updatedIds.includes(lessonId?.toString())) {
         setIsCompleted(true);
+        isCompletedRef.current = true;
       }
 
       setSuccessMsg(`🎉 Module Completed! ${res.message || 'All lessons in this module are complete.'}`);
@@ -343,19 +683,143 @@ const Lesson = () => {
       // ignore localStorage errors
     }
 
-    if (!notEnrolled) {
+    if (resumeSeconds > 0 && ytPlayerRef.current?.seekTo) {
       try {
-        await updatePlaybackProgress({
-          courseId,
-          lessonId,
-          playedSeconds: resumeSeconds || 1,
-          durationSeconds: 600,
-        });
-      } catch (e) {
-        // silent fallback to local storage
-      }
+        ytPlayerRef.current.seekTo(resumeSeconds, true);
+      } catch (e) {}
     }
+
+    savePlaybackProgress({
+      position: resumeSeconds || 1,
+      duration: currentDurationRef.current || 600,
+    });
   };
+
+  // YouTube IFrame API Lifecycle & Periodic Progress Synchronization
+  useEffect(() => {
+    if (!youtubeVideoId) return;
+
+    let pollInterval = null;
+    let isDisposed = false;
+
+    const handleStateChange = (event) => {
+      const player = event.target;
+      // event.data: 1 = PLAYING, 2 = PAUSED, 0 = ENDED
+      if (event.data === 1) {
+        setVideoPlaybackStarted(true);
+        if (pollInterval) clearInterval(pollInterval);
+        pollInterval = setInterval(() => {
+          if (isDisposed) return;
+          try {
+            if (player && typeof player.getCurrentTime === 'function') {
+              const pos = Math.floor(player.getCurrentTime());
+              const dur = Math.floor(player.getDuration() || currentDurationRef.current);
+              currentPositionRef.current = pos;
+              if (dur > 0) currentDurationRef.current = dur;
+
+              // 90% threshold for automatic video lesson completion
+              const reachedThreshold = dur > 0 && pos >= Math.floor(dur * 0.9);
+              savePlaybackProgress({
+                position: pos,
+                duration: dur,
+                completed: reachedThreshold,
+              });
+            }
+          } catch (e) {}
+        }, 10000);
+      } else if (event.data === 2) {
+        // Paused: save immediately
+        if (pollInterval) clearInterval(pollInterval);
+        try {
+          if (player && typeof player.getCurrentTime === 'function') {
+            const pos = Math.floor(player.getCurrentTime());
+            const dur = Math.floor(player.getDuration() || currentDurationRef.current);
+            currentPositionRef.current = pos;
+            if (dur > 0) currentDurationRef.current = dur;
+            savePlaybackProgress({ position: pos, duration: dur });
+          }
+        } catch (e) {}
+      } else if (event.data === 0) {
+        // Ended: mark lesson completed
+        if (pollInterval) clearInterval(pollInterval);
+        try {
+          if (player && typeof player.getDuration === 'function') {
+            const dur = Math.floor(player.getDuration() || currentDurationRef.current);
+            currentPositionRef.current = dur;
+            savePlaybackProgress({ position: dur, duration: dur, completed: true });
+          }
+        } catch (e) {}
+      }
+    };
+
+    const initYT = () => {
+      if (window.YT && window.YT.Player) {
+        try {
+          new window.YT.Player('lesson-youtube-player-frame', {
+            events: {
+              onReady: (event) => {
+                ytPlayerRef.current = event.target;
+                if (resumeSeconds > 0) {
+                  event.target.seekTo(resumeSeconds, true);
+                }
+                const dur = Math.floor(event.target.getDuration() || 0);
+                if (dur > 0) currentDurationRef.current = dur;
+              },
+              onStateChange: handleStateChange,
+            },
+          });
+        } catch (e) {
+          console.warn('YouTube Player initialization warning:', e);
+        }
+      }
+    };
+
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      window.onYouTubeIframeAPIReady = initYT;
+    } else {
+      initYT();
+    }
+
+    const handleBeforeUnload = () => {
+      if (currentPositionRef.current > 0) {
+        savePlaybackProgress({
+          position: currentPositionRef.current,
+          duration: currentDurationRef.current,
+        });
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      isDisposed = true;
+      if (pollInterval) clearInterval(pollInterval);
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      if (currentPositionRef.current > 0) {
+        savePlaybackProgress({
+          position: currentPositionRef.current,
+          duration: currentDurationRef.current,
+        });
+      }
+    };
+  }, [youtubeVideoId, resumeSeconds, savePlaybackProgress]);
+
+  // For text or non-video lessons: auto-track engagement and start state
+  useEffect(() => {
+    if (youtubeVideoId || notEnrolled || !enrollmentId) return;
+
+    const textTimer = setTimeout(() => {
+      if (!isCompleted && (!lessonProgress || lessonProgress.status === 'NOT_STARTED')) {
+        savePlaybackProgress({ position: 5, duration: 60 });
+      }
+    }, 5000);
+
+    return () => clearTimeout(textTimer);
+  }, [youtubeVideoId, notEnrolled, enrollmentId, isCompleted, lessonProgress, savePlaybackProgress]);
 
   // Loading State
   if (loading) {
@@ -537,6 +1001,7 @@ const Lesson = () => {
             {youtubeVideoId && !videoError ? (
               <div className="relative w-full aspect-video bg-black">
                 <iframe
+                  id="lesson-youtube-player-frame"
                   className="w-full h-full border-0"
                   src={`https://www.youtube-nocookie.com/embed/${youtubeVideoId}?enablejsapi=1&rel=0&modestbranding=1&playsinline=1${
                     resumeSeconds > 0 ? `&start=${Math.floor(resumeSeconds)}` : ''
@@ -584,7 +1049,7 @@ const Lesson = () => {
 
             {/* Playback Controls & Status Bar */}
             <div className="px-5 py-3.5 bg-slate-950 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
-              <div className="flex items-center gap-2.5 text-slate-400">
+              <div className="flex items-center gap-2.5 flex-wrap text-slate-400">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                 <span className="font-medium text-slate-300">
                   {youtubeVideoId ? 'Interactive YouTube Player' : 'Text Lesson Mode'}
@@ -597,9 +1062,37 @@ const Lesson = () => {
                     </span>
                   </>
                 )}
-                {resumeSeconds > 0 && (
+
+                {/* Status Indicator Badge */}
+                {isCompleted || lessonProgress?.status === 'COMPLETED' ? (
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold flex items-center gap-1 shadow-xs">
+                    <CheckCircle className="w-3 h-3 text-emerald-400" /> Completed
+                  </span>
+                ) : lessonProgress?.status === 'IN_PROGRESS' || resumeSeconds > 0 ? (
+                  <span className="px-2.5 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30 text-[10px] font-bold flex items-center gap-1 shadow-xs">
+                    <Play className="w-2.5 h-2.5 fill-current" /> In Progress ({lessonProgress?.progressPercentage || Math.min(99, Math.round(((resumeSeconds || 1) / (currentDurationRef.current || 600)) * 100))}%)
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700 text-[10px] font-semibold">
+                    Not Started
+                  </span>
+                )}
+
+                {resumeSeconds > 0 && !isCompleted && (
                   <span className="px-2 py-0.5 rounded-full bg-blue-900/60 text-blue-300 border border-blue-700/50 text-[10px] font-semibold flex items-center gap-1">
                     <RotateCcw className="w-3 h-3" /> Resumed at {formatSeconds(resumeSeconds)}
+                  </span>
+                )}
+
+                {progressRestoring && (
+                  <span className="flex items-center gap-1.5 text-blue-300 text-[10px] font-medium">
+                    <Loader2 className="w-3 h-3 animate-spin text-blue-400" /> Restoring saved position...
+                  </span>
+                )}
+
+                {savingProgress && (
+                  <span className="flex items-center gap-1 text-slate-400 text-[10px]">
+                    <Loader2 className="w-2.5 h-2.5 animate-spin" /> Saving progress...
                   </span>
                 )}
               </div>
@@ -619,6 +1112,27 @@ const Lesson = () => {
               </div>
             </div>
           </div>
+
+          {/* Actionable Progress Save Error Banner */}
+          {saveError && (
+            <div className="p-3.5 bg-amber-50 border border-amber-200 text-amber-900 rounded-2xl flex items-center justify-between gap-3 text-xs shadow-xs animate-fade-in">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                <span className="font-semibold">{saveError}</span>
+              </div>
+              <button
+                onClick={() =>
+                  savePlaybackProgress({
+                    position: currentPositionRef.current || resumeSeconds,
+                    duration: currentDurationRef.current || 600,
+                  })
+                }
+                className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs transition-colors shrink-0 cursor-pointer shadow-xs"
+              >
+                Retry Save
+              </button>
+            </div>
+          )}
 
           {/* ─── LESSON OVERVIEW & DETAILS ─── */}
           <div className="bg-white border border-slate-200/80 rounded-3xl p-6 md:p-8 space-y-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)]">
@@ -664,6 +1178,7 @@ const Lesson = () => {
               </div>
             </div>
 
+            {/* ─── Knowledge Check Assessment (SLP-17 & SLP-18) ─── */}
             {/* ─── Knowledge Check Assessment ─── */}
             {quiz && (
               <div className="mt-8 pt-8 border-t border-slate-200/80 space-y-6">
@@ -847,6 +1362,349 @@ const Lesson = () => {
               </div>
             )}
 
+            {/* ─── Hands-On Practical Experiments & Exercises (Sprint 2) ─── */}
+            {exercises && exercises.length > 0 && (
+              <div className="mt-8 pt-8 border-t border-slate-200/80 space-y-5">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20">
+                      <Code2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h2 className="text-base md:text-lg font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                        Hands-On Practical Experiments
+                        <span className="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">
+                          Interactive Lab
+                        </span>
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Complete practical tasks, download experiment starter kits, and upload your files directly below.
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                    {exercises.length} {exercises.length === 1 ? 'Experiment' : 'Experiments'} Attached
+                  </span>
+                </div>
+
+                <div className="space-y-4 pt-1">
+                  {exercises.map((ex) => {
+                    const status = ex.mySubmission?.submissionStatus || 'Not Started';
+                    const isAccepted = status === 'Accepted';
+                    const isSubmitted = status === 'Submitted';
+                    const isNeedsRevision = status === 'Needs Revision';
+                    const isInProgress = status === 'In Progress';
+                    const isExpanded = activeUploadExId === ex._id;
+                    const guidance = getExperimentFormatGuidance(ex.exerciseType);
+                    const isUploading = uploadingState[ex._id];
+                    const selectedFile = uploadFiles[ex._id];
+                    const currentText = uploadTexts[ex._id] !== undefined ? uploadTexts[ex._id] : (ex.mySubmission?.textAnswer || '');
+
+                    return (
+                      <div
+                        key={ex._id}
+                        className={`rounded-2xl border transition-all duration-200 bg-white shadow-xs overflow-hidden ${
+                          isExpanded
+                            ? 'border-blue-400 ring-2 ring-blue-500/10'
+                            : 'border-slate-200 hover:border-slate-300'
+                        }`}
+                      >
+                        {/* ─── Experiment Summary Header ─── */}
+                        <div className="p-5 flex flex-col md:flex-row md:items-start justify-between gap-4">
+                          <div className="space-y-2 flex-1">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="px-2.5 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-800 flex items-center gap-1">
+                                {ex.exerciseType === 'Coding Exercise' && <Code2 className="w-3.5 h-3.5 text-emerald-600" />}
+                                {ex.exerciseType === 'File Upload' && <UploadCloud className="w-3.5 h-3.5 text-blue-600" />}
+                                {ex.exerciseType === 'Project Task' && <FolderGit2 className="w-3.5 h-3.5 text-amber-600" />}
+                                {ex.exerciseType === 'Text Answer' && <FileText className="w-3.5 h-3.5 text-purple-600" />}
+                                <span>{ex.exerciseType}</span>
+                              </span>
+                              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700">
+                                {ex.difficulty}
+                              </span>
+                              <span className="text-xs text-slate-400 flex items-center gap-1">
+                                <Clock className="w-3.5 h-3.5" /> ~{ex.estimatedMinutes} mins
+                              </span>
+                              <span className="text-xs text-slate-600 flex items-center gap-1 font-semibold">
+                                <Award className="w-3.5 h-3.5 text-amber-500" /> {ex.maximumMarks} Pts (Pass: {ex.passingMarks})
+                              </span>
+                            </div>
+
+                            <h3 className="font-bold text-slate-900 text-base">{ex.title}</h3>
+                            <p className="text-xs text-slate-600 leading-relaxed">{ex.description}</p>
+
+                            {/* Download Experiment Materials (Starter Kit & Docs) */}
+                            <div className="flex flex-wrap items-center gap-2.5 pt-1">
+                              {ex.experimentFile?.originalName && (
+                                <a
+                                  href={getExerciseAttachmentUrl(ex._id)}
+                                  download
+                                  title="Download experiment lab materials"
+                                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 font-semibold text-xs border border-blue-200 transition-colors"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download Starter Kit ({ex.experimentFile.originalName})</span>
+                                </a>
+                              )}
+                              {ex.referenceMaterials?.map((ref, rIdx) => (
+                                <a
+                                  key={rIdx}
+                                  href={ref.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs text-slate-500 hover:text-blue-600 hover:underline"
+                                >
+                                  <ExternalLink className="w-3 h-3" />
+                                  <span>{ref.title}</span>
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* ─── Actions & Current Status Chip ─── */}
+                          <div className="flex flex-col sm:flex-row md:flex-col items-end gap-2.5 shrink-0">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                isAccepted
+                                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                  : isNeedsRevision
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200'
+                                  : isSubmitted
+                                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                                  : isInProgress
+                                  ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                  : 'bg-slate-100 text-slate-600 border-slate-200'
+                              }`}
+                            >
+                              {status === 'Not Started' ? 'Not Started' : `Status: ${status}`}
+                            </span>
+
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setActiveUploadExId(isExpanded ? null : ex._id)}
+                                className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                                  isExpanded
+                                    ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20'
+                                }`}
+                              >
+                                <UploadCloud className="w-4 h-4" />
+                                <span>{isExpanded ? 'Hide Upload Panel' : status === 'Not Started' ? 'Upload Solution' : 'Upload / Resubmit'}</span>
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                              </button>
+
+                              <Link
+                                to={`/exercises/${ex._id}`}
+                                title="Open full dedicated lab workspace"
+                                className="p-2 rounded-xl border border-slate-200 hover:border-blue-300 text-slate-600 hover:text-blue-600 hover:bg-blue-50/50 transition-colors"
+                              >
+                                <ExternalLink className="w-4 h-4" />
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* ─── Previous Evaluation / Feedback Banner (if evaluated) ─── */}
+                        {ex.mySubmission && (ex.mySubmission.marksAwarded !== null || ex.mySubmission.reviewerFeedback) && (
+                          <div className="mx-5 mb-4 p-3.5 rounded-xl bg-slate-50 border border-slate-200 text-xs flex flex-wrap items-center justify-between gap-2">
+                            <div className="flex items-center gap-2">
+                              <Award className="w-4 h-4 text-amber-500 shrink-0" />
+                              <div>
+                                <span className="font-bold text-slate-800">
+                                  Score: {ex.mySubmission.marksAwarded !== null ? `${ex.mySubmission.marksAwarded} / ${ex.maximumMarks} Pts` : 'Pending evaluation'}
+                                </span>
+                                {ex.mySubmission.marksAwarded !== null && (
+                                  <span
+                                    className={`ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold ${
+                                      ex.mySubmission.marksAwarded >= ex.passingMarks
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : 'bg-rose-100 text-rose-800'
+                                    }`}
+                                  >
+                                    {ex.mySubmission.marksAwarded >= ex.passingMarks ? 'Passed' : 'Needs Revision'}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            {ex.mySubmission.reviewerFeedback && (
+                              <p className="text-slate-600 italic">
+                                Feedback: "{ex.mySubmission.reviewerFeedback}"
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* ─── Active Upload Solution Panel (Based on Experiment) ─── */}
+                        {isExpanded && (
+                          <div className="border-t border-slate-200 bg-slate-50/70 p-5 space-y-4">
+                            {/* Format Guidance Banner */}
+                            <div className="p-3.5 rounded-xl bg-blue-50/80 border border-blue-200 text-xs text-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                              <div className="space-y-0.5">
+                                <span className="font-bold block flex items-center gap-1.5">
+                                  <FileCode className="w-4 h-4 text-blue-600" />
+                                  Required Format for this {ex.exerciseType}:
+                                </span>
+                                <p className="text-blue-700">{guidance.description}</p>
+                              </div>
+                              <span className="px-2 py-1 rounded-md bg-white border border-blue-200 text-blue-800 font-mono text-[11px] font-semibold self-start sm:self-auto shrink-0">
+                                {guidance.badge} (Max 10 MB)
+                              </span>
+                            </div>
+
+                            {/* Notifications */}
+                            {uploadSuccess[ex._id] && (
+                              <div className="flex items-center gap-2 p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs">
+                                <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                                <span>{uploadSuccess[ex._id]}</span>
+                              </div>
+                            )}
+                            {uploadError[ex._id] && (
+                              <div className="flex items-center gap-2 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs">
+                                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                <span>{uploadError[ex._id]}</span>
+                              </div>
+                            )}
+
+                            {/* File Drag-and-Drop Area */}
+                            <div className="space-y-1.5">
+                              <label className="block text-xs font-bold text-slate-800">
+                                Upload Experiment Solution File:
+                              </label>
+
+                              <div className="relative border-2 border-dashed border-slate-300 hover:border-blue-400 rounded-2xl p-4 bg-white transition-all text-center">
+                                <input
+                                  type="file"
+                                  id={`file-input-${ex._id}`}
+                                  accept={guidance.accept}
+                                  onChange={(e) => handleFileSelection(ex._id, e.target.files[0])}
+                                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                />
+
+                                {selectedFile ? (
+                                  <div className="flex items-center justify-between bg-blue-50 border border-blue-200 p-3 rounded-xl text-left">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+                                        <Paperclip className="w-4 h-4" />
+                                      </div>
+                                      <div>
+                                        <p className="font-bold text-slate-900 text-xs line-clamp-1">{selectedFile.name}</p>
+                                        <p className="text-[11px] text-slate-500">
+                                          {(selectedFile.size / 1024).toFixed(1)} KB · Ready for upload
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        handleFileSelection(ex._id, null);
+                                      }}
+                                      className="text-xs font-semibold text-rose-600 hover:underline px-2 py-1"
+                                    >
+                                      Remove
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-1 py-2">
+                                    <UploadCloud className="w-7 h-7 mx-auto text-slate-400" />
+                                    <p className="text-xs font-semibold text-slate-700">
+                                      Drag & drop your solution file here, or <span className="text-blue-600 underline">browse</span>
+                                    </p>
+                                    <p className="text-[11px] text-slate-400">
+                                      Accepted: {guidance.badge}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            {/* Currently Uploaded File Display (from earlier submission) */}
+                            {ex.mySubmission?.fileReference?.originalName && (
+                              <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+                                <div className="flex items-center gap-2">
+                                  <Check className="w-4 h-4 text-emerald-600" />
+                                  <span className="text-slate-600 font-medium">Currently on file:</span>
+                                  <strong className="text-slate-900 font-mono">
+                                    {ex.mySubmission.fileReference.originalName}
+                                  </strong>
+                                  <span className="text-slate-400 text-[11px]">
+                                    ({Math.round((ex.mySubmission.fileReference.size || 0) / 1024)} KB)
+                                  </span>
+                                </div>
+                                <a
+                                  href={getExerciseSubmissionFileUrl(ex.mySubmission._id)}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-blue-600 hover:underline font-semibold"
+                                >
+                                  <Download className="w-3.5 h-3.5" />
+                                  <span>Download</span>
+                                </a>
+                              </div>
+                            )}
+
+                            {/* Optional Notes or Inline Code Snippet */}
+                            <div className="space-y-1.5">
+                              <label className="block text-xs font-bold text-slate-800">
+                                Solution Notes / Code Snippet (Optional):
+                              </label>
+                              <textarea
+                                rows={3}
+                                value={currentText}
+                                onChange={(e) =>
+                                  setUploadTexts((prev) => ({ ...prev, [ex._id]: e.target.value }))
+                                }
+                                placeholder="Add implementation notes, run instructions, or paste solution snippet..."
+                                className="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-slate-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                              />
+                            </div>
+
+                            {/* Actions bar */}
+                            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+                              <Link
+                                to={`/exercises/${ex._id}`}
+                                className="text-xs font-semibold text-blue-600 hover:underline inline-flex items-center gap-1"
+                              >
+                                <span>Open Full-Screen Lab Workspace</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                              </Link>
+
+                              <div className="flex items-center gap-2.5">
+                                <button
+                                  type="button"
+                                  disabled={isUploading}
+                                  onClick={() => handleExperimentFileUpload(ex, true)}
+                                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                                >
+                                  <Save className="w-3.5 h-3.5 text-slate-500" />
+                                  <span>Save Draft</span>
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={isUploading}
+                                  onClick={() => handleExperimentFileUpload(ex, false)}
+                                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 shadow-sm shadow-blue-500/20 transition-all cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
+                                >
+                                  {isUploading ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                  ) : (
+                                    <Send className="w-3.5 h-3.5" />
+                                  )}
+                                  <span>{isUploading ? 'Uploading...' : 'Submit Experiment'}</span>
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* ─── Bottom Actions Bar (Navigation & Completion) ─── */}
             <div className="pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
@@ -992,7 +1850,10 @@ const Lesson = () => {
                         <div className="space-y-1.5">
                           {modLessons.map((les, lesIdx) => {
                             const isCurrent = les._id?.toString() === lesson._id?.toString();
-                            const isLesCompleted = completedLessonIds.includes(les._id?.toString());
+                            const lp = enrollmentLessonMap[les._id?.toString()];
+                            const isLesCompleted = completedLessonIds.includes(les._id?.toString()) || lp?.status === 'COMPLETED';
+                            const isLesInProgress = !isLesCompleted && (lp?.status === 'IN_PROGRESS' || (lp?.lastPositionSeconds > 0));
+                            const lesPercentage = lp?.progressPercentage || 0;
 
                             return (
                               <Link
@@ -1013,6 +1874,10 @@ const Lesson = () => {
                                     <div className="w-5 h-5 rounded-full bg-blue-600 text-white flex items-center justify-center">
                                       <Play className="w-2.5 h-2.5 fill-current ml-0.5" />
                                     </div>
+                                  ) : isLesInProgress ? (
+                                    <div className="w-5 h-5 rounded-full bg-blue-100 text-blue-700 border border-blue-300 flex items-center justify-center text-[9px] font-bold">
+                                      {lesPercentage}%
+                                    </div>
                                   ) : (
                                     <div className="w-5 h-5 rounded-full bg-slate-200 text-slate-600 flex items-center justify-center text-[10px] font-bold">
                                       {lesIdx + 1}
@@ -1022,13 +1887,23 @@ const Lesson = () => {
 
                                 <div className="flex-1 min-w-0">
                                   <p className="truncate font-medium">{les.title}</p>
-                                  <span className="text-[10px] text-slate-400 font-normal">
-                                    {les.duration || '15 min'}
-                                  </span>
+                                  <div className="flex items-center gap-1.5 mt-0.5 text-[10px]">
+                                    <span className="text-slate-400 font-normal">
+                                      {les.duration || '15 min'}
+                                    </span>
+                                    <span className="text-slate-300">•</span>
+                                    {isLesCompleted ? (
+                                      <span className="font-semibold text-emerald-600">Completed</span>
+                                    ) : isLesInProgress ? (
+                                      <span className="font-semibold text-blue-600">In Progress ({lesPercentage}%)</span>
+                                    ) : (
+                                      <span className="text-slate-400">Not Started</span>
+                                    )}
+                                  </div>
                                 </div>
 
                                 {isCurrent && (
-                                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-600 text-white">
+                                  <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-600 text-white shrink-0">
                                     Now Playing
                                   </span>
                                 )}
@@ -1113,19 +1988,36 @@ const Lesson = () => {
                     <div className="space-y-1.5">
                       {modLessons.map((les, lesIdx) => {
                         const isCurrent = les._id?.toString() === lesson._id?.toString();
-                        const isLesCompleted = completedLessonIds.includes(les._id?.toString());
+                        const lp = enrollmentLessonMap[les._id?.toString()];
+                        const isLesCompleted = completedLessonIds.includes(les._id?.toString()) || lp?.status === 'COMPLETED';
+                        const isLesInProgress = !isLesCompleted && (lp?.status === 'IN_PROGRESS' || (lp?.lastPositionSeconds > 0));
 
                         return (
                           <Link
                             key={les._id}
                             to={`/learning/${courseId}/${les._id}`}
                             onClick={() => setMobileCurriculumOpen(false)}
-                            className={`w-full p-2.5 rounded-xl border text-left flex items-center gap-2.5 text-xs ${
+                            className={`w-full p-2.5 rounded-xl border text-left flex items-center justify-between gap-2.5 text-xs ${
                               isCurrent
                                 ? 'bg-blue-50 border-blue-300 text-blue-900 font-bold'
                                 : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'
                             }`}
                           >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span className="shrink-0 text-[10px] w-4 text-center">
+                                {isLesCompleted ? '✓' : lesIdx + 1}
+                              </span>
+                              <span className="truncate">{les.title}</span>
+                            </div>
+                            {isLesCompleted ? (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 shrink-0">
+                                Done
+                              </span>
+                            ) : isLesInProgress ? (
+                              <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 shrink-0">
+                                {lp?.progressPercentage || 0}%
+                              </span>
+                            ) : null}
                             <span className="shrink-0 text-[10px]">{isLesCompleted ? '✓' : lesIdx + 1}</span>
                             <span className="truncate flex-1">{les.title}</span>
                           </Link>
