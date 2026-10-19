@@ -19,6 +19,7 @@ import Lesson from './pages/Lesson';
 import MyLearning from './pages/MyLearning';
 import Profile from './pages/Profile';
 import InternshipProjects from './pages/InternshipProjects';
+import ProjectDetails from './pages/ProjectDetails';
 import InternshipProjectDetails from './pages/InternshipProjectDetails';
 
 import CodingChallenges from './pages/CodingChallenges';
@@ -27,6 +28,8 @@ import SkillLearning from './pages/SkillLearning';
 import SkillAssessment from './pages/SkillAssessment';
 import StudentQuizzes from './pages/student/StudentQuizzes';
 import TakeQuiz from './pages/student/TakeQuiz';
+import StudentTasks from './pages/student/StudentTasks';
+import StudentAchievements from './pages/student/StudentAchievements';
 
 // Instructor Management Pages
 import MyCourses from './pages/instructor/MyCourses';
@@ -38,8 +41,6 @@ import InstructorStudents from './pages/instructor/InstructorStudents';
 import CurriculumManagement from './pages/instructor/CurriculumManagement';
 import InstructorQuizzes from './pages/instructor/InstructorQuizzes';
 import InstructorTasks from './pages/instructor/InstructorTasks';
-import StudentTasks from './pages/student/StudentTasks';
-import StudentAchievements from './pages/student/StudentAchievements';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
