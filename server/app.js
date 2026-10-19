@@ -44,7 +44,6 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/instructor', instructorRoutes);
 app.use('/api/quizzes', quizRoutes);
-app.use('/api', resourceRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/project-enrollments', projectEnrollmentRoutes);
 app.use('/api/project-submissions', projectSubmissionRoutes);

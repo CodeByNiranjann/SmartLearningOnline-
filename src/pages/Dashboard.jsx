@@ -26,6 +26,7 @@ import {
   fetchStudentProgress,
   fetchCourses,
   fetchPersonalizedRecommendations,
+  fetchStudentProgressSummary,
 } from '../services/api';
 import ProgressBar from '../components/ProgressBar';
 import CourseCard from '../components/CourseCard';
@@ -48,16 +49,26 @@ import {
   Calendar,
   ChevronDown,
   ChevronUp,
-  Flame,
   Award,
-  BookOpen, TrendingUp, Award, CheckCircle2, ArrowRight,
-  Play, HelpCircle, Clock, Target, Star, Zap, Activity,
-  BarChart2, RefreshCw, AlertTriangle,
+  HelpCircle,
+  CheckCircle2,
+  Star,
+  Activity,
+  BarChart2,
+  RefreshCw,
+  AlertTriangle,
 } from 'lucide-react';
 
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+
+  const [progressSummary, setProgressSummary] = useState({
+    coursesStarted: 0,
+    coursesCompleted: 0,
+    lessonsCompleted: 0,
+    overallProgress: 0,
+  });
   const [summary, setSummary] = useState(null);
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -68,36 +79,7 @@ const Dashboard = () => {
   const [discoveryTab, setDiscoveryTab] = useState('recommended'); // 'recommended' | 'practice' | 'explore'
   const [showFullCalendar, setShowFullCalendar] = useState(false);
 
-  useEffect(() => {
-    const loadDashboardData = async () => {
-      try {
-        setLoading(true);
-        const [progressData, coursesData, recData] = await Promise.allSettled([
-          fetchStudentProgress(),
-          fetchCourses(),
-          fetchPersonalizedRecommendations(),
-        ]);
-
-        if (progressData.status === 'fulfilled' && progressData.value) {
-          setProgressSummary(progressData.value.summary || {});
-          setEnrolledCourses(progressData.value.progressList || []);
-        }
-        if (coursesData.status === 'fulfilled' && coursesData.value) {
-          setFeaturedCourses(coursesData.value.slice(0, 3));
-        }
-        if (recData.status === 'fulfilled' && recData.value) {
-          setRecommendations(recData.value);
-        }
-      } catch (err) {
-        console.error('Error loading dashboard:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadDashboardData();
-  }, []);
-  const loadSummary = useCallback(async () => {
+  const loadDashboardData = useCallback(async () => {
     if (user?.role !== 'student') {
       setLoading(false);
       return;
@@ -120,7 +102,8 @@ const Dashboard = () => {
         setRecommendations(recRes.value);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load progress summary.');
+      console.error('Error loading dashboard:', err);
+      setError(err.response?.data?.message || 'Failed to load some dashboard data.');
     } finally {
       setLoading(false);
     }
@@ -145,7 +128,7 @@ const Dashboard = () => {
               Good morning, {user?.name || 'Student'} 👋
             </h1>
             <p className="text-blue-100 text-xs md:text-sm leading-relaxed max-w-xl">
-              Build mastery across full-stack curricula, real-world projects, and calibrated challenges.
+              Build mastery across full-stack curricula, real-world projects, calibrated challenges, and assessments.
             </p>
           </div>
 
@@ -190,15 +173,28 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {error && (
+        <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3 text-amber-800 text-sm">
+          <AlertTriangle className="w-5 h-5 shrink-0" />
+          <span>{error}</span>
+          <button
+            onClick={loadDashboardData}
+            className="ml-auto inline-flex items-center gap-1 px-3 py-1 bg-amber-200 hover:bg-amber-300 text-amber-900 rounded-lg text-xs font-semibold transition"
+          >
+            <RefreshCw className="w-3 h-3" /> Retry
+          </button>
+        </div>
+      )}
+
       {/* ─── Compact Metrics Bar ─── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-3.5">
           <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 shrink-0">
             <BookOpen className="w-4 h-4" />
           </div>
           <div>
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Courses Started</p>
-            <p className="text-xl font-bold text-slate-900">{progressSummary.coursesStarted || 0}</p>
+            <p className="text-xl font-bold text-slate-900">{progressSummary.coursesStarted || summary?.totalEnrolled || 0}</p>
           </div>
         </div>
 
@@ -208,7 +204,7 @@ const Dashboard = () => {
           </div>
           <div>
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Completed</p>
-            <p className="text-xl font-bold text-slate-900">{progressSummary.coursesCompleted || 0}</p>
+            <p className="text-xl font-bold text-slate-900">{progressSummary.coursesCompleted || summary?.completedCourses || 0}</p>
           </div>
         </div>
 
@@ -223,46 +219,78 @@ const Dashboard = () => {
         </div>
 
         <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 shrink-0">
+            <Target className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Quiz Score</p>
+            <p className="text-xl font-bold text-slate-900">
+              {summary?.quizStats?.avgScore !== null && summary?.quizStats?.avgScore !== undefined
+                ? `${summary.quizStats.avgScore}%`
+                : '—'}
+            </p>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-3.5 col-span-2 sm:col-span-1">
           <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 shrink-0">
             <TrendingUp className="w-4 h-4" />
           </div>
           <div>
             <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Overall Progress</p>
-            <p className="text-xl font-bold text-slate-900">{progressSummary.overallProgress || 0}%</p>
+            <p className="text-xl font-bold text-slate-900">
+              {progressSummary.overallProgress || summary?.overallPercent || 0}%
+            </p>
           </div>
-  if (user?.role === 'admin') {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 rounded-3xl bg-indigo-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-500/30">
-            <BarChart2 className="w-10 h-10 text-white" />
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Admin Console</h2>
-          <p className="text-slate-500 mb-6">Manage users, courses, audit logs, and platform analytics.</p>
-          <Link to="/admin/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-semibold transition shadow-md">
-            Open Admin Console <ArrowRight className="w-4 h-4" />
-          </Link>
         </div>
       </div>
-    );
-  }
 
-  if (user?.role === 'instructor') {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-8">
-        <div className="text-center max-w-md">
-          <div className="w-20 h-20 rounded-3xl bg-emerald-600 flex items-center justify-center mx-auto mb-6 shadow-xl shadow-emerald-500/30">
-            <Zap className="w-10 h-10 text-white" />
+      {/* ─── Student Quick Action Shortcuts (Quizzes, Tasks, Achievements) ─── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <Link
+          to="/student/quizzes"
+          className="group flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white shadow-md shadow-indigo-500/15 hover:shadow-lg hover:shadow-indigo-500/25 transition-all"
+        >
+          <div className="p-3 rounded-xl bg-white/20 shrink-0">
+            <HelpCircle className="w-5 h-5" />
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 mb-2">Instructor Hub</h2>
-          <p className="text-slate-500 mb-6">Manage your courses, quizzes, tasks and track student progress.</p>
-          <Link to="/instructor/dashboard" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition shadow-md">
-            Open Instructor Hub <ArrowRight className="w-4 h-4" />
-          </Link>
-        </div>
+          <div className="min-w-0">
+            <div className="font-bold text-sm">Take a Quiz</div>
+            <div className="text-xs text-indigo-200 truncate">
+              {summary?.quizStats?.total ? `${summary.quizStats.total} attempts logged` : 'Test knowledge & timed drills'}
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 ml-auto opacity-70 group-hover:translate-x-1 transition-transform shrink-0" />
+        </Link>
+
+        <Link
+          to="/student/tasks"
+          className="group flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white shadow-md shadow-amber-500/15 hover:shadow-lg hover:shadow-amber-500/25 transition-all"
+        >
+          <div className="p-3 rounded-xl bg-white/20 shrink-0">
+            <CheckCircle2 className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="font-bold text-sm">Practical Tasks</div>
+            <div className="text-xs text-amber-100 truncate">Submit assignments & project deliverables</div>
+          </div>
+          <ArrowRight className="w-4 h-4 ml-auto opacity-70 group-hover:translate-x-1 transition-transform shrink-0" />
+        </Link>
+
+        <Link
+          to="/student/achievements"
+          className="group flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-md shadow-emerald-500/15 hover:shadow-lg hover:shadow-emerald-500/25 transition-all"
+        >
+          <div className="p-3 rounded-xl bg-white/20 shrink-0">
+            <Star className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="font-bold text-sm">Achievements & Awards</div>
+            <div className="text-xs text-emerald-100 truncate">View your certificates & milestones</div>
+          </div>
+          <ArrowRight className="w-4 h-4 ml-auto opacity-70 group-hover:translate-x-1 transition-transform shrink-0" />
+        </Link>
       </div>
-    );
-  }
 
   const nextAction = recommendations?.immediateNextAction;
 
@@ -272,16 +300,6 @@ const Dashboard = () => {
           <div className="flex items-center gap-2">
             <BookOpen className="w-4 h-4 text-blue-600" />
             <h2 className="text-base font-bold text-slate-900">Continue Learning</h2>
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Welcome Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-slate-900 tracking-tight">
-              Welcome back, <span className="text-blue-600">{user?.name?.split(' ')[0]}</span> 👋
-            </h1>
-            <p className="text-slate-500 mt-1">Here's your learning progress at a glance.</p>
           </div>
           <button
             onClick={loadDashboardData}
@@ -350,15 +368,9 @@ const Dashboard = () => {
                     <Play className="w-3 h-3 fill-current" />
                     <span>Resume Course</span>
                   </Link>
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-            Refresh
-          </button>
-        </div>
-
-        {error && (
-          <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3 text-amber-800 text-sm">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
+                </div>
+              );
+            })}
           </div>
         )}
 
