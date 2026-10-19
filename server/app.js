@@ -20,7 +20,7 @@ import internshipProjectRoutes from './routes/internshipProjectRoutes.js';
 import codingChallengeRoutes from './routes/codingChallengeRoutes.js';
 import skillLearningRoutes from './routes/skillLearningRoutes.js';
 import recommendationRoutes from './routes/recommendationRoutes.js';
-import resourceRoutes from './routes/resourceRoutes.js';
+
 import attemptRoutes from './routes/attemptRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 
