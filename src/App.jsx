@@ -20,10 +20,13 @@ import MyLearning from './pages/MyLearning';
 import Profile from './pages/Profile';
 import InternshipProjects from './pages/InternshipProjects';
 import InternshipProjectDetails from './pages/InternshipProjectDetails';
+
 import CodingChallenges from './pages/CodingChallenges';
 import ChallengeDetails from './pages/ChallengeDetails';
 import SkillLearning from './pages/SkillLearning';
 import SkillAssessment from './pages/SkillAssessment';
+import StudentQuizzes from './pages/student/StudentQuizzes';
+import TakeQuiz from './pages/student/TakeQuiz';
 
 // Instructor Management Pages
 import MyCourses from './pages/instructor/MyCourses';
@@ -33,12 +36,17 @@ import ManageLessons from './pages/instructor/ManageLessons';
 import InstructorDashboard from './pages/instructor/InstructorDashboard';
 import InstructorStudents from './pages/instructor/InstructorStudents';
 import CurriculumManagement from './pages/instructor/CurriculumManagement';
+import InstructorQuizzes from './pages/instructor/InstructorQuizzes';
+import InstructorTasks from './pages/instructor/InstructorTasks';
+import StudentTasks from './pages/student/StudentTasks';
+import StudentAchievements from './pages/student/StudentAchievements';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminReports from './pages/admin/AdminReports';
 import AdminSettings from './pages/admin/AdminSettings';
+import AdminAuditLogs from './pages/admin/AdminAuditLogs';
 
 // Practical Exercises Pages (Sprint 2)
 import PracticalExercises from './pages/PracticalExercises';
@@ -80,15 +88,18 @@ function App() {
               <Route path="/admin/curriculum" element={<CurriculumManagement />} />
               <Route path="/admin/reports" element={<AdminReports />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
+              <Route path="/admin/audit-logs" element={<AdminAuditLogs />} />
             </Route>
           </Route>
 
           {/* Dedicated Instructor Portal Routes */}
-          <Route element={<RoleRoute allowedRoles={['instructor']} />}>
+          <Route element={<RoleRoute allowedRoles={['instructor', 'admin']} />}>
             <Route element={<ManagementLayout />}>
               <Route path="/instructor/dashboard" element={<InstructorDashboard />} />
               <Route path="/instructor/modules" element={<CurriculumManagement initialTab="modules" />} />
               <Route path="/instructor/lessons" element={<CurriculumManagement initialTab="lessons" />} />
+              <Route path="/instructor/quizzes" element={<InstructorQuizzes />} />
+              <Route path="/instructor/tasks" element={<InstructorTasks />} />
               <Route path="/instructor/students" element={<InstructorStudents />} />
               <Route path="/instructor/reports" element={<AdminReports />} />
             </Route>
@@ -143,6 +154,10 @@ function App() {
               <Route path="/my-learning" element={<MyLearning />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/learning/:courseId/:lessonId" element={<Lesson />} />
+              <Route path="/student/quizzes" element={<StudentQuizzes />} />
+              <Route path="/student/quizzes/:quizId" element={<TakeQuiz />} />
+              <Route path="/student/tasks" element={<StudentTasks />} />
+              <Route path="/student/achievements" element={<StudentAchievements />} />
             </Route>
 
             {/* Default Route Redirection */}

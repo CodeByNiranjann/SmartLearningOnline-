@@ -364,6 +364,16 @@ export const fetchLessonQuiz = async (lessonId) => {
   }
 };
 
+export const fetchQuizzes = async (params = {}) => {
+  const response = await api.get('/quizzes', { params });
+  return response.data;
+};
+
+export const fetchQuizById = async (id) => {
+  const response = await api.get(`/quizzes/${id}`);
+  return response.data;
+};
+
 export const createQuiz = async (quizData) => {
   const response = await api.post('/quizzes', quizData);
   return response.data;
@@ -449,6 +459,36 @@ export const leaveProject = async (projectId) => {
   const response = await api.delete(`/projects/${projectId}/enroll`);
   return response.data;
 };
+export const fetchStudentQuizzes = async (params = {}) => {
+  const response = await api.get('/quizzes/student', { params });
+  return response.data;
+};
+
+export const fetchStudentQuizDetails = async (id) => {
+  const response = await api.get(`/quizzes/${id}/details`);
+  return response.data;
+};
+
+export const startQuizAttempt = async (id) => {
+  const response = await api.post(`/quizzes/${id}/attempts/start`);
+  return response.data;
+};
+
+export const submitQuizAttempt = async (attemptId, answers) => {
+  const response = await api.post(`/attempts/${attemptId}/submit`, { answers });
+  return response.data;
+};
+
+export const fetchAttemptResult = async (attemptId) => {
+  const response = await api.get(`/attempts/${attemptId}`);
+  return response.data;
+};
+
+export const fetchQuizAttempts = async (quizId) => {
+  const response = await api.get(`/quizzes/${quizId}/attempts`);
+  return response.data;
+};
+
 // ─── Internship Project Services (SLP-15) ────────────────────────────────────
 export const fetchInternshipProjects = async (params = {}) => {
   const response = await api.get('/internship-projects', { params });
@@ -780,6 +820,69 @@ export const reviewActivitySubmission = async (submissionId, reviewData) => {
 export const getActivitySubmissionDownloadUrl = (submissionId, fileIndex = 0) => {
   const baseURL = api.defaults.baseURL || 'http://localhost:5000/api';
   return `${baseURL}/activity-submissions/${submissionId}/download/${fileIndex}`;
+};
+
+// ─── Admin Users & Audit Logs Services (Part 3) ─
+export const updateUserStatusOrRole = async (userId, data) => {
+  const response = await api.patch(`/admin/users/${userId}`, data);
+  return response.data;
+};
+
+export const fetchAdminAuditLogs = async (params = {}) => {
+  const response = await api.get('/admin/audit-logs', { params });
+  return response.data;
+};
+
+// ─── Tasks Services (Part 6) ─
+export const fetchTasks = async (params = {}) => {
+  const response = await api.get('/tasks', { params });
+  return response.data;
+};
+
+export const fetchTaskById = async (taskId) => {
+  const response = await api.get(`/tasks/${taskId}`);
+  return response.data;
+};
+
+export const createTask = async (taskData) => {
+  const response = await api.post('/tasks', taskData);
+  return response.data;
+};
+
+export const updateTask = async (taskId, taskData) => {
+  const response = await api.put(`/tasks/${taskId}`, taskData);
+  return response.data;
+};
+
+export const deleteTask = async (taskId) => {
+  const response = await api.delete(`/tasks/${taskId}`);
+  return response.data;
+};
+
+export const submitTask = async (taskId, submissionData) => {
+  const response = await api.post(`/tasks/${taskId}/submit`, submissionData);
+  return response.data;
+};
+
+export const fetchTaskSubmissions = async (taskId, params = {}) => {
+  const response = await api.get(`/tasks/${taskId}/submissions`, { params });
+  return response.data;
+};
+
+export const gradeTaskSubmission = async (submissionId, gradeData) => {
+  const response = await api.post(`/tasks/submissions/${submissionId}/grade`, gradeData);
+  return response.data;
+};
+
+// ─── Achievements & Summary Services (Part 4 & 7) ─
+export const fetchStudentProgressSummary = async () => {
+  const response = await api.get('/progress/summary');
+  return response.data;
+};
+
+export const fetchStudentAchievements = async () => {
+  const response = await api.get('/progress/achievements');
+  return response.data;
 };
 
 export default api;
