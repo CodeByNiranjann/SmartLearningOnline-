@@ -1,8 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { fetchStudentProgressSummary } from '../services/api';
+import { fetchStudentProgressSummary, fetchPersonalizedRecommendations } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import CourseCard from '../components/CourseCard';
+import ChallengeCard from '../components/ChallengeCard';
+import StudentLearningCalendar from '../components/StudentLearningCalendar';
 import {
+  BookOpen,
+  TrendingUp,
+  Award,
+  CheckCircle2,
+  ArrowRight,
+  Play,
+  HelpCircle,
+  Clock,
+  Target,
+  Star,
+  Zap,
+  Activity,
+  BarChart2,
+  RefreshCw,
+  AlertTriangle,
+  Code2,
+  Sparkles,
   fetchStudentProgress,
   fetchCourses,
   fetchPersonalizedRecommendations,
@@ -39,9 +59,11 @@ const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [summary, setSummary] = useState(null);
+  const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const loadDashboardData = useCallback(async () => {
   // Layout states for perfect desktop fit
   const [discoveryTab, setDiscoveryTab] = useState('recommended'); // 'recommended' | 'practice' | 'explore'
   const [showFullCalendar, setShowFullCalendar] = useState(false);
@@ -83,8 +105,20 @@ const Dashboard = () => {
     try {
       setLoading(true);
       setError('');
-      const data = await fetchStudentProgressSummary();
-      setSummary(data);
+      const [summaryRes, recRes] = await Promise.allSettled([
+        fetchStudentProgressSummary(),
+        fetchPersonalizedRecommendations(),
+      ]);
+
+      if (summaryRes.status === 'fulfilled') {
+        setSummary(summaryRes.value);
+      } else {
+        setError(summaryRes.reason?.response?.data?.message || 'Failed to load progress summary.');
+      }
+
+      if (recRes.status === 'fulfilled') {
+        setRecommendations(recRes.value);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load progress summary.');
     } finally {
@@ -93,8 +127,8 @@ const Dashboard = () => {
   }, [user]);
 
   useEffect(() => {
-    loadSummary();
-  }, [loadSummary]);
+    loadDashboardData();
+  }, [loadDashboardData]);
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto font-sans pb-10">
@@ -230,6 +264,8 @@ const Dashboard = () => {
     );
   }
 
+  const nextAction = recommendations?.immediateNextAction;
+
       {/* ─── Continue Learning (Active In-Progress Courses) ─── */}
       <div className="space-y-3">
         <div className="flex items-center justify-between">
@@ -248,7 +284,7 @@ const Dashboard = () => {
             <p className="text-slate-500 mt-1">Here's your learning progress at a glance.</p>
           </div>
           <button
-            onClick={loadSummary}
+            onClick={loadDashboardData}
             disabled={loading}
             className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 text-sm font-medium transition shadow-xs"
           >
@@ -323,6 +359,34 @@ const Dashboard = () => {
           <div className="p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-center gap-3 text-amber-800 text-sm">
             <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             <span>{error}</span>
+          </div>
+        )}
+
+        {/* ─── SLP-13: Next Best Step (What to Learn Next) ─── */}
+        {nextAction && (
+          <div className="bg-gradient-to-r from-indigo-900/10 via-purple-900/10 to-blue-900/10 border border-indigo-200 rounded-2xl p-6 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1.5">
+                <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 uppercase tracking-wider">
+                  <Zap className="w-3.5 h-3.5 fill-current" />
+                  <span>Recommended Next Step For You</span>
+                </div>
+                <h2 className="text-xl font-bold text-slate-900">
+                  {nextAction.title}
+                </h2>
+                <p className="text-xs text-slate-500">
+                  {nextAction.reason} · {nextAction.subtitle}
+                </p>
+              </div>
+
+              <Link
+                to={nextAction.link}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all shrink-0"
+              >
+                <span>{nextAction.type === 'continue_course' ? 'Resume Now' : 'Start Next Activity'}</span>
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </div>
           </div>
         )}
 
@@ -552,6 +616,9 @@ const Dashboard = () => {
               </Link>
             </div>
 
+            {/* Student Learning Calendar: Daily study time heatmap & consistency */}
+            <StudentLearningCalendar />
+
             {/* My Courses Progress */}
             {summary.enrolledCourses.length === 0 ? (
               <div className="p-10 rounded-2xl bg-white border border-slate-200 text-center">
@@ -624,10 +691,80 @@ const Dashboard = () => {
                           to={`/courses/${course.courseId}`}
                           className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition"
                         >
-                          Start Learning <ArrowRight className="w-3.5 h-3.5" />
+                          Start Learning <ArrowRight className="w-4 h-4" />
                         </Link>
                       )}
                     </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ─── SLP-13: Recommended Next Courses ─── */}
+            {recommendations?.nextCourses?.length > 0 && (
+              <div className="space-y-4 pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-indigo-600" />
+                      <h2 className="text-lg font-bold text-slate-900">Recommended Next For You</h2>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Curated based on your enrolled topics, skill tier, and learning velocity
+                    </p>
+                  </div>
+                  <Link
+                    to="/skill-learning"
+                    className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                  >
+                    View Full Skill Path <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {recommendations.nextCourses.map((course) => (
+                    <div key={course._id} className="flex flex-col justify-between">
+                      <CourseCard course={course} />
+                      {course.recommendationReason && (
+                        <div className="mt-2 text-[11px] font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3 text-indigo-500 shrink-0" />
+                          <span className="truncate">{course.recommendationReason}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ─── SLP-13: Next Practice Problems ─── */}
+            {recommendations?.nextChallenges?.length > 0 && (
+              <div className="space-y-4 pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
+                      <Code2 className="w-4 h-4 text-emerald-600" />
+                      Recommended Coding Practice
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Solve these questions to validate your understanding
+                    </p>
+                  </div>
+                  <Link
+                    to="/coding-challenges"
+                    className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+                  >
+                    Coding Arena <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {recommendations.nextChallenges.map((ch) => (
+                    <ChallengeCard
+                      key={ch._id}
+                      challenge={ch}
+                      matchReason={ch.recommendationReason}
+                    />
                   ))}
                 </div>
               </div>
