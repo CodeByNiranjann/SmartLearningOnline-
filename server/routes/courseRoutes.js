@@ -6,6 +6,8 @@ import Progress from '../models/Progress.js';
 import Enrollment from '../models/Enrollment.js';
 import { protect, optionalProtect } from '../middleware/authMiddleware.js';
 import { requireRole, canManageCourse } from '../middleware/roleMiddleware.js';
+import ProjectActivity from '../models/ProjectActivity.js';
+import { createActivityHandler } from './activityRoutes.js';
 
 const router = express.Router();
 
@@ -448,6 +450,39 @@ router.delete('/:id/enroll', protect, async (req, res) => {
   } catch (error) {
     console.error('Unenroll course error:', error);
     res.status(500).json({ message: 'Error dropping course enrollment.' });
+  }
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SLP-7: PROJECT-BASED ACTIVITIES AT COURSE LEVEL
+// ─────────────────────────────────────────────────────────────────────────────
+
+// @route   POST /api/courses/:courseId/activities
+// @desc    Create project activity for this course
+// @access  Instructor / Admin
+router.post('/:courseId/activities', protect, requireRole('instructor', 'admin'), async (req, res) => {
+  createActivityHandler(req, res);
+});
+
+// @route   GET /api/courses/:courseId/activities
+// @desc    List published activities for this course
+// @access  Public / Optional Protect
+router.get('/:courseId/activities', optionalProtect, async (req, res) => {
+  try {
+    const { courseId } = req.params;
+    const filter = { course: courseId };
+    if (!(req.user?.role === 'admin' || req.user?.role === 'instructor')) {
+      filter.status = 'published';
+    }
+    const activities = await ProjectActivity.find(filter)
+      .populate('trainer', 'name email avatar')
+      .populate('module', 'title')
+      .populate('lesson', 'title')
+      .sort({ createdAt: -1 });
+
+    res.json({ success: true, activities });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch course activities', error: error.message });
   }
 });
 

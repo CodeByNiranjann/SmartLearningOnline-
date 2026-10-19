@@ -15,6 +15,8 @@ import {
   Sparkles,
   AlertCircle,
   RefreshCw,
+  FolderGit2,
+  Code2,
 } from 'lucide-react';
 
 const InstructorDashboard = () => {
@@ -84,11 +86,11 @@ const InstructorDashboard = () => {
       link: '/instructor/modules',
     },
     {
-      title: 'Course Lessons',
-      value: stats?.myLessonsCount ?? 0,
-      icon: FileText,
+      title: 'Project Activities',
+      value: stats?.myProjectsCount ?? 0,
+      icon: FolderGit2,
       color: 'text-purple-600 bg-purple-50 border-purple-100',
-      link: '/instructor/lessons',
+      link: '/manage/projects',
     },
     {
       title: 'Enrolled Students',
@@ -107,13 +109,13 @@ const InstructorDashboard = () => {
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-white text-xs font-semibold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5 text-blue-200" />
-              <span>Instructor Portal</span>
+              <span>Trainer & Instructor Portal</span>
             </div>
             <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-              Welcome back, {user?.name || 'Instructor'} 👋
+              Welcome back, {user?.name || 'Trainer'} 👋
             </h1>
             <p className="text-blue-100 text-sm md:text-base leading-relaxed">
-              Design comprehensive courses, publish interactive lessons, and track your students' learning progress.
+              Design comprehensive courses, create project-based activities for practical skills, and evaluate student milestones.
             </p>
           </div>
 
@@ -122,13 +124,19 @@ const InstructorDashboard = () => {
               to="/manage/courses/new"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white text-blue-700 font-bold text-xs shadow-md hover:bg-blue-50 transition-colors"
             >
-              <Plus className="w-4 h-4" /> Create New Course
+              <Plus className="w-4 h-4" /> Create Course
+            </Link>
+            <Link
+              to="/manage/projects/new"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500 hover:bg-blue-400 text-white font-bold text-xs shadow-md transition-colors"
+            >
+              <FolderGit2 className="w-4 h-4" /> Create Project Activity
             </Link>
             <Link
               to="/instructor/students"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-semibold text-xs border border-white/25 transition-colors"
             >
-              <Users className="w-4 h-4" /> View My Students
+              <Users className="w-4 h-4" /> My Students
             </Link>
           </div>
         </div>
@@ -269,6 +277,104 @@ const InstructorDashboard = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* ─── Project-Based Practical Activities (SLP-7) ─── */}
+      <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+          <div>
+            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-700 text-xs font-semibold mb-1">
+              <FolderGit2 className="w-3.5 h-3.5" />
+              <span>Practical Skills Development (SLP-7)</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">
+              Project-Based Activities
+            </h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Hands-on capstones with ordered milestones, deliverables, and rubric evaluations for student practical skills.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <Link
+              to="/manage/projects"
+              className="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-xs font-semibold text-slate-700 transition-colors"
+            >
+              Manage All Projects
+            </Link>
+            <Link
+              to="/manage/projects/new"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs shadow-md shadow-purple-500/20 transition-colors"
+            >
+              <Plus className="w-4 h-4" /> New Project Activity
+            </Link>
+          </div>
+        </div>
+
+        {(!stats?.projectMetrics || stats.projectMetrics.length === 0) ? (
+          <div className="p-8 rounded-2xl border border-dashed border-slate-200 text-center space-y-3 bg-slate-50/50">
+            <FolderGit2 className="w-10 h-10 text-slate-300 mx-auto" />
+            <h3 className="font-bold text-slate-800 text-sm">No project-based activities created yet</h3>
+            <p className="text-xs text-slate-500 max-w-md mx-auto">
+              Create hands-on practical project activities so your students can develop real-world engineering skills.
+            </p>
+            <Link
+              to="/manage/projects/new"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-purple-600 text-white font-bold text-xs shadow-md shadow-purple-500/20"
+            >
+              <Plus className="w-4 h-4" /> Create First Project
+            </Link>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {stats.projectMetrics.map((p) => (
+              <div
+                key={p.id}
+                className="p-5 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:border-purple-300 hover:shadow-md transition-all flex flex-col justify-between space-y-4 group"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-purple-50 text-purple-700 border border-purple-200">
+                      {p.category}
+                    </span>
+                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
+                      p.status === 'published' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'
+                    }`}>
+                      {p.difficulty}
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-slate-900 text-sm group-hover:text-purple-700 transition-colors">
+                    {p.title}
+                  </h3>
+                  {p.requiredSkills && p.requiredSkills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {p.requiredSkills.slice(0, 3).map((sk) => (
+                        <span key={sk} className="text-[10px] font-medium px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-600">
+                          {sk}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200/60 text-xs">
+                  <Link
+                    to={`/manage/projects/${p.id}/edit`}
+                    className="font-semibold text-purple-600 hover:text-purple-700"
+                  >
+                    Configure Activity →
+                  </Link>
+                  <Link
+                    to={`/manage/projects/${p.id}/submissions`}
+                    className="text-slate-500 hover:text-slate-900 font-medium"
+                  >
+                    Submissions
+                  </Link>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

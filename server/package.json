@@ -7,10 +7,19 @@
   "scripts": {
     "start": "node server.js",
     "seed": "node seed.js",
+    "seed:projects": "node seedProjects.js",
+    "seed:activities": "node seedActivities.js",
+    "seed:exercises": "node seedExercises.js",
+    "migrate:progress": "node migrateLessonProgress.js",
     "test": "node test-runner.js",
+    "test:lesson-progress": "node test-lesson-progress.js",
+    "test:progress-idempotent": "node testProgressIdempotent.js",
+    "test:projects": "node test-projects.js",
+    "test:slp7": "node test-slp7-trainer-projects.js",
+    "test:exercises": "node test-exercises.js",
     "test:e2e": "node test-e2e.js",
     "test:admin": "node test-admin-instructor.js",
-    "test:all": "node test-runner.js && node test-e2e.js && node test-admin-instructor.js"
+    "test:all": "node test-runner.js && node test-lesson-progress.js && node test-slp7-trainer-projects.js && node testProgressIdempotent.js && node test-projects.js && node test-exercises.js && node test-e2e.js && node test-admin-instructor.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",

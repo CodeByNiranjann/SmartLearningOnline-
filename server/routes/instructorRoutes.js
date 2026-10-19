@@ -4,6 +4,9 @@ import Course from '../models/Course.js';
 import Module from '../models/Module.js';
 import Lesson from '../models/Lesson.js';
 import Progress from '../models/Progress.js';
+import Project from '../models/Project.js';
+import ProjectEnrollment from '../models/ProjectEnrollment.js';
+import ProjectSubmission from '../models/ProjectSubmission.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { requireRole } from '../middleware/roleMiddleware.js';
 
@@ -23,11 +26,19 @@ router.get('/stats', async (req, res) => {
     const courses = await Course.find({ instructorId }).sort({ createdAt: -1 });
     const courseIds = courses.map((c) => c._id);
 
-    // Get count of modules and lessons across instructor's courses
-    const [modulesCount, lessonsCount, progressRecords] = await Promise.all([
+    // Find all projects created by this instructor
+    const projects = await Project.find({
+      $or: [{ instructorId }, { instructorId: null }],
+    }).sort({ createdAt: -1 });
+    const projectIds = projects.map((p) => p._id);
+
+    // Get counts across courses and project activities
+    const [modulesCount, lessonsCount, progressRecords, projectEnrollmentsCount, pendingSubmissionsCount] = await Promise.all([
       Module.countDocuments({ courseId: { $in: courseIds } }),
       Lesson.countDocuments({ courseId: { $in: courseIds } }),
       Progress.find({ courseId: { $in: courseIds } }).populate('userId', 'name email'),
+      ProjectEnrollment.countDocuments({ projectId: { $in: projectIds } }),
+      ProjectSubmission.countDocuments({ projectId: { $in: projectIds }, status: 'submitted' }),
     ]);
 
     // Unique enrolled students
@@ -82,9 +93,21 @@ router.get('/stats', async (req, res) => {
       myCoursesCount: courses.length,
       myModulesCount: modulesCount,
       myLessonsCount: lessonsCount,
+      myProjectsCount: projects.length,
+      projectEnrollmentsCount,
+      pendingSubmissionsCount,
       totalStudentsCount: uniqueStudentIds.size,
       totalEnrollments: progressRecords.length,
       courseMetrics,
+      projectMetrics: projects.slice(0, 5).map((p) => ({
+        id: p._id,
+        title: p.title,
+        category: p.category,
+        difficulty: p.difficulty,
+        status: p.status,
+        technologies: p.technologies || [],
+        requiredSkills: p.requiredSkills || [],
+      })),
       recentActivity: recentActivity.slice(0, 6),
     });
   } catch (error) {

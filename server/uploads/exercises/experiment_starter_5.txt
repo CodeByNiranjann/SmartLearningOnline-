@@ -1,0 +1,6 @@
+// === Exercise 5: Interactive Custom React Hook for Real-Time Window Resizing & Breakpoints ===
+// Starter template
+function solution() {
+  // TODO: Implement solution
+}
+module.exports = { solution };
