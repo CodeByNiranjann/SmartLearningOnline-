@@ -19,7 +19,7 @@ import Lesson from './pages/Lesson';
 import MyLearning from './pages/MyLearning';
 import Profile from './pages/Profile';
 import InternshipProjects from './pages/InternshipProjects';
-import ProjectDetails from './pages/ProjectDetails';
+import InternshipProjectDetails from './pages/InternshipProjectDetails';
 import CodingChallenges from './pages/CodingChallenges';
 import ChallengeDetails from './pages/ChallengeDetails';
 import SkillLearning from './pages/SkillLearning';
@@ -43,6 +43,14 @@ import AdminSettings from './pages/admin/AdminSettings';
 // Practical Exercises Pages (Sprint 2)
 import PracticalExercises from './pages/PracticalExercises';
 import ExerciseDetails from './pages/ExerciseDetails';
+
+// Project-Based Activities Pages (SLP-7)
+import ManageActivities from './pages/instructor/ManageActivities';
+import EditActivity from './pages/instructor/EditActivity';
+import ActivityReview from './pages/instructor/ActivityReview';
+import Activities from './pages/Activities';
+import ActivityDetails from './pages/ActivityDetails';
+import ActivityWorkspace from './pages/ActivityWorkspace';
 import ManageExercises from './pages/instructor/ManageExercises';
 import EditExercise from './pages/instructor/EditExercise';
 import ExerciseSubmissions from './pages/instructor/ExerciseSubmissions';
@@ -102,6 +110,11 @@ function App() {
               <Route path="/manage/projects/new" element={<EditProject />} />
               <Route path="/manage/projects/:projectId/edit" element={<EditProject />} />
               <Route path="/manage/projects/:projectId/submissions" element={<ProjectReview />} />
+              <Route path="/manage/activities" element={<ManageActivities />} />
+              <Route path="/manage/activities/new" element={<EditActivity />} />
+              <Route path="/manage/activities/:activityId/edit" element={<EditActivity />} />
+              <Route path="/manage/activities/:activityId/submissions" element={<ActivityReview />} />
+              <Route path="/manage/activities/:activityId/assignments" element={<ActivityReview />} />
             </Route>
           </Route>
 
@@ -110,12 +123,15 @@ function App() {
             {/* Public/Browsing Courses, Real-World Projects (SLP-6), and Practical Exercises */}
             <Route path="/courses" element={<Courses />} />
             <Route path="/courses/:courseId" element={<CourseDetails />} />
+            <Route path="/activities" element={<Activities />} />
+            <Route path="/activities/:activityId" element={<ActivityDetails />} />
+            <Route path="/activities/:activityId/workspace" element={<ActivityWorkspace />} />
             <Route path="/projects" element={<Projects />} />
             <Route path="/projects/:projectId" element={<ProjectDetails />} />
             <Route path="/exercises" element={<PracticalExercises />} />
             <Route path="/exercises/:exerciseId" element={<ExerciseDetails />} />
             <Route path="/internship-projects" element={<InternshipProjects />} />
-            <Route path="/internship-projects/:projectId" element={<ProjectDetails />} />
+            <Route path="/internship-projects/:projectId" element={<InternshipProjectDetails />} />
             <Route path="/coding-challenges" element={<CodingChallenges />} />
             <Route path="/coding-challenges/:id" element={<ChallengeDetails />} />
 

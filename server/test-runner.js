@@ -9,6 +9,7 @@ import Lesson from './models/Lesson.js';
 import Quiz from './models/Quiz.js';
 import Enrollment from './models/Enrollment.js';
 import Progress from './models/Progress.js';
+import { ProjectActivity, ActivityMilestone, ActivityAssignment, ActivitySubmission } from './models/index.js';
 
 dotenv.config();
 
@@ -441,9 +442,266 @@ async function runTestSuite() {
     assert(quizUpdateRes.status === 200 && quizUpdateRes.data.quiz.passingScore === 80, 'Instructor updates quiz passingScore');
 
     // ─────────────────────────────────────────────────────────────────────────
+    // MODULE 7: PROJECT-BASED ACTIVITIES (SLP-7)
+    // ─────────────────────────────────────────────────────────────────────────
+    console.log('\n--- 7. Project-Based Activities (SLP-7) ---');
+
+    // 7.1 Instructor 1 creates project-based activity for course 1
+    const createActRes = await axios.post(
+      `${BASE_URL}/courses/${course1._id}/activities`,
+      {
+        title: 'Full-Stack E-Commerce Activity',
+        description: 'Design and implement a complete full-stack shopping platform with checkout.',
+        problemStatement: 'E-commerce platforms require real-time stock reservation, user authentication, and atomic transactions.',
+        learningObjectives: ['Implement secure authentication', 'Design transactional DB schemas'],
+        instructions: 'Follow milestone guidelines step by step.',
+        category: 'Full-Stack Development',
+        difficulty: 'Intermediate',
+        maximumMarks: 100,
+        passingMarks: 60,
+        status: 'published',
+      },
+      { headers: inst1Headers }
+    );
+    assert(createActRes.status === 201 && createActRes.data.success, 'Instructor 1 creates project-based activity for course');
+    const activityId = createActRes.data.activity._id;
+
+    // 7.2 Course ownership boundary: Instructor 2 blocked from creating activity for Instructor 1's course
+    try {
+      await axios.post(
+        `${BASE_URL}/courses/${course1._id}/activities`,
+        {
+          title: 'Unauthorized Activity',
+          description: 'Should fail',
+        },
+        { headers: inst2Headers }
+      );
+      assert(false, 'Instructor 2 blocked from creating activity on Course 1');
+    } catch (err) {
+      assert(err.response?.status === 403, 'Instructor 2 rejected from creating activity on Course 1 (403)');
+    }
+
+    // 7.3 Student blocked from creating activity
+    try {
+      await axios.post(
+        `${BASE_URL}/courses/${course1._id}/activities`,
+        { title: 'Student Activity', description: 'Should fail' },
+        { headers: studentHeaders }
+      );
+      assert(false, 'Student blocked from creating activity');
+    } catch (err) {
+      assert(err.response?.status === 403, 'Student rejected from creating activity (403)');
+    }
+
+    // 7.4 Validation: Passing marks cannot exceed maximum marks
+    try {
+      await axios.post(
+        `${BASE_URL}/courses/${course1._id}/activities`,
+        {
+          title: 'Invalid Marks Activity',
+          description: 'Should fail',
+          maximumMarks: 50,
+          passingMarks: 100,
+        },
+        { headers: inst1Headers }
+      );
+      assert(false, 'Activity with passingMarks > maximumMarks rejected');
+    } catch (err) {
+      assert(err.response?.status === 400, 'Invalid marks relationship rejected with 400');
+    }
+
+    // 7.5 Instructor creates ordered milestones
+    const m1Res = await axios.post(
+      `${BASE_URL}/activities/${activityId}/milestones`,
+      {
+        title: 'Milestone 1: Database Schema & Models',
+        description: 'Design User, Product, and Order models.',
+        sequenceOrder: 1,
+        expectedDeliverables: ['Mongoose Schemas', 'ER Diagram'],
+      },
+      { headers: inst1Headers }
+    );
+    assert(m1Res.status === 201 && m1Res.data.milestone.sequenceOrder === 1, 'Instructor creates milestone 1');
+    const milestone1Id = m1Res.data.milestone._id;
+
+    const m2Res = await axios.post(
+      `${BASE_URL}/activities/${activityId}/milestones`,
+      {
+        title: 'Milestone 2: RESTful Endpoints & Middleware',
+        description: 'Implement CRUD routes and auth middleware.',
+        sequenceOrder: 2,
+        expectedDeliverables: ['Express Routers', 'JWT Guard'],
+      },
+      { headers: inst1Headers }
+    );
+    assert(m2Res.status === 201 && m2Res.data.milestone.sequenceOrder === 2, 'Instructor creates milestone 2');
+
+    // 7.6 Student browses published activities
+    const actListRes = await axios.get(`${BASE_URL}/activities`, { headers: studentHeaders });
+    assert(
+      actListRes.status === 200 &&
+        actListRes.data.activities.some((a) => a._id.toString() === activityId.toString()),
+      'Student retrieves published activities listing'
+    );
+
+    // 7.7 Student retrieves activity details
+    const actDetailsRes = await axios.get(`${BASE_URL}/activities/${activityId}`, {
+      headers: studentHeaders,
+    });
+    assert(
+      actDetailsRes.status === 200 && actDetailsRes.data.milestones.length === 2,
+      'Student retrieves activity details with ordered milestones'
+    );
+
+    // 7.8 Student starts activity assignment
+    const startActRes = await axios.post(
+      `${BASE_URL}/activities/${activityId}/start`,
+      {},
+      { headers: studentHeaders }
+    );
+    assert(
+      (startActRes.status === 201 || startActRes.status === 200) &&
+        startActRes.data.assignment.status === 'in_progress',
+      'Student starts activity and receives in_progress assignment'
+    );
+    const assignmentId = startActRes.data.assignment._id;
+
+    // 7.9 Duplicate assignment prevention
+    const duplicateStartRes = await axios.post(
+      `${BASE_URL}/activities/${activityId}/start`,
+      {},
+      { headers: studentHeaders }
+    );
+    assert(
+      duplicateStartRes.status === 200 &&
+        duplicateStartRes.data.assignment._id.toString() === assignmentId.toString(),
+      'Duplicate activity start returns existing assignment without creating duplicates'
+    );
+
+    // 7.10 Student updates milestone progress (persisted in MongoDB)
+    const progressUpdateRes = await axios.patch(
+      `${BASE_URL}/activity-assignments/${assignmentId}/progress`,
+      {
+        milestoneId: milestone1Id,
+        completed: true,
+        notes: 'Models created and tested locally',
+      },
+      { headers: studentHeaders }
+    );
+    assert(
+      progressUpdateRes.status === 200 && progressUpdateRes.data.overallProgress === 50,
+      'Student completes milestone 1 and overallProgress updates to 50%'
+    );
+
+    // 7.11 Student submits work (Attempt 1)
+    const submitRes = await axios.post(
+      `${BASE_URL}/activity-assignments/${assignmentId}/submissions`,
+      {
+        textResponse: 'Completed API implementation with authentication and products endpoints.',
+        repositoryUrl: 'https://github.com/student/ecommerce-api',
+        demoUrl: 'https://ecommerce-demo.app',
+      },
+      { headers: studentHeaders }
+    );
+    assert(
+      submitRes.status === 201 &&
+        submitRes.data.submission.attemptNumber === 1 &&
+        submitRes.data.submission.status === 'submitted',
+      'Student submits Attempt #1 with repository and demo URLs'
+    );
+    const sub1Id = submitRes.data.submission._id;
+
+    // 7.12 Unauthorized grading rejected: Student blocked from grading
+    try {
+      await axios.patch(
+        `${BASE_URL}/activity-submissions/${sub1Id}/review`,
+        { marksAwarded: 100, status: 'completed' },
+        { headers: studentHeaders }
+      );
+      assert(false, 'Student blocked from grading submission');
+    } catch (err) {
+      assert(err.response?.status === 403, 'Student rejected from reviewing submission (403)');
+    }
+
+    // 7.13 Marks exceeding maximumMarks rejected
+    try {
+      await axios.patch(
+        `${BASE_URL}/activity-submissions/${sub1Id}/review`,
+        { marksAwarded: 150, status: 'completed' },
+        { headers: inst1Headers }
+      );
+      assert(false, 'Grading marks exceeding maximumMarks rejected');
+    } catch (err) {
+      assert(err.response?.status === 400, 'Marks exceeding maximumMarks rejected with 400');
+    }
+
+    // 7.14 Trainer reviews Attempt #1 and requests revision
+    const review1Res = await axios.patch(
+      `${BASE_URL}/activity-submissions/${sub1Id}/review`,
+      {
+        marksAwarded: 45,
+        status: 'needs_revision',
+        trainerFeedback: 'Good start! Please add validation middleware for product prices and categories.',
+      },
+      { headers: inst1Headers }
+    );
+    assert(
+      review1Res.status === 200 &&
+        review1Res.data.submission.status === 'needs_revision' &&
+        review1Res.data.assignmentStatus === 'needs_revision',
+      'Trainer reviews Attempt #1 and requests revision'
+    );
+
+    // 7.15 Student resubmits work (Attempt #2 preserving history)
+    const resubmitRes = await axios.post(
+      `${BASE_URL}/activity-assignments/${assignmentId}/submissions`,
+      {
+        textResponse: 'Added Joi validation middleware and error handling per feedback.',
+        repositoryUrl: 'https://github.com/student/ecommerce-api',
+      },
+      { headers: studentHeaders }
+    );
+    assert(
+      resubmitRes.status === 201 && resubmitRes.data.submission.attemptNumber === 2,
+      'Student resubmits deliverable as Attempt #2'
+    );
+    const sub2Id = resubmitRes.data.submission._id;
+
+    // 7.16 Submission attempt history preserves previous attempts
+    const historyRes = await axios.get(
+      `${BASE_URL}/activity-assignments/${assignmentId}/submissions`,
+      { headers: studentHeaders }
+    );
+    assert(
+      historyRes.status === 200 && historyRes.data.submissions.length === 2,
+      'Submission history preserves both Attempt #1 and Attempt #2'
+    );
+
+    // 7.17 Trainer grades Attempt #2 with passing marks and marks completed
+    const review2Res = await axios.patch(
+      `${BASE_URL}/activity-submissions/${sub2Id}/review`,
+      {
+        marksAwarded: 95,
+        status: 'completed',
+        trainerFeedback: 'Outstanding improvements! Validation is clean and well-structured.',
+      },
+      { headers: inst1Headers }
+    );
+    assert(
+      review2Res.status === 200 &&
+        review2Res.data.submission.marksAwarded === 95 &&
+        review2Res.data.assignmentStatus === 'completed',
+      'Trainer grades Attempt #2 with 95 marks and marks assignment completed'
+    );
+
+    // ─────────────────────────────────────────────────────────────────────────
     // CLEANUP TEST ARTIFACTS
     // ─────────────────────────────────────────────────────────────────────────
     console.log('\n--- Cleanup: Purging Temporary Test Records ---');
+    await ActivitySubmission.deleteMany({ activity: activityId });
+    await ActivityAssignment.deleteMany({ activity: activityId });
+    await ActivityMilestone.deleteMany({ activity: activityId });
+    await ProjectActivity.deleteMany({ _id: activityId });
     await Quiz.deleteMany({ courseId: course1._id });
     await Lesson.deleteMany({ courseId: course1._id });
     await Module.deleteMany({ courseId: course1._id });

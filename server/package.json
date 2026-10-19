@@ -8,6 +8,7 @@
     "start": "node server.js",
     "seed": "node seed.js",
     "seed:projects": "node seedProjects.js",
+    "seed:activities": "node seedActivities.js",
     "seed:exercises": "node seedExercises.js",
     "migrate:progress": "node migrateLessonProgress.js",
     "test": "node test-runner.js",

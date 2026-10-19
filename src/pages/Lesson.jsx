@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, Link } from 'react-router-dom';
 import {
   fetchLessonDetails,
   fetchLessonResources,
@@ -148,12 +146,6 @@ const Lesson = () => {
   const currentPositionRef = useRef(0);
   const currentDurationRef = useRef(0);
   const isCompletedRef = useRef(false);
-  // Quiz states
-  const [quiz, setQuiz] = useState(null);
-  const [quizAnswers, setQuizAnswers] = useState({});
-  const [quizResult, setQuizResult] = useState(null);
-  const [submittingQuiz, setSubmittingQuiz] = useState(false);
-  const [quizError, setQuizError] = useState('');
 
   // Player & UI states
   const [theaterMode, setTheaterMode] = useState(false);
@@ -289,14 +281,10 @@ const Lesson = () => {
       setVideoError(false);
       setQuizResult(null);
       setQuizAnswers({});
+      setQuizError('');
+      setResumeSeconds(0);
 
       const [details, resList, progressData, quizData, exData] = await Promise.all([
-      setResumeSeconds(0);
-      setQuizResult(null);
-      setQuizAnswers({});
-      setQuizError('');
-
-      const [details, resList, progressData, quizData] = await Promise.all([
         fetchLessonDetails(lessonId),
         fetchLessonResources(lessonId),
         fetchCourseProgress(courseId).catch((err) => {

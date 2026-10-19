@@ -8,6 +8,8 @@ import {
 } from '../services/api';
 import ProgressBar from '../components/ProgressBar';
 import CourseCard from '../components/CourseCard';
+import ChallengeCard from '../components/ChallengeCard';
+import StudentLearningCalendar from '../components/StudentLearningCalendar';
 
 import {
   BookOpen,
@@ -22,8 +24,11 @@ import {
   Zap,
   Target,
   Code2,
-  Briefcase,
-  Layers,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Flame,
+  Award,
 } from 'lucide-react';
 
 const Dashboard = () => {
@@ -39,6 +44,10 @@ const Dashboard = () => {
   const [featuredCourses, setFeaturedCourses] = useState([]);
   const [recommendations, setRecommendations] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Layout states for perfect desktop fit
+  const [discoveryTab, setDiscoveryTab] = useState('recommended'); // 'recommended' | 'practice' | 'explore'
+  const [showFullCalendar, setShowFullCalendar] = useState(false);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -73,142 +82,143 @@ const Dashboard = () => {
   const nextAction = recommendations?.immediateNextAction;
 
   return (
-    <div className="space-y-10 font-sans">
-      {/* Welcome Hero Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-8 md:p-10 text-white overflow-hidden shadow-xl shadow-blue-600/10">
-        <div className="relative z-10 space-y-3 max-w-2xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-white text-xs font-semibold">
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Student Learning Workspace</span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
-            Good morning, {user?.name || 'Student'} 👋
-          </h1>
-          <p className="text-blue-100 text-sm md:text-base leading-relaxed">
-            Continue where you left off. Build mastery across industry-standard engineering paths.
-          </p>
-        </div>
-
-        {/* 2FA Status Notification Badge */}
-        {!user?.isTwoFactorEnabled && (
-          <div className="mt-4 pt-4 border-t border-white/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-blue-100">
-              <ShieldCheck className="w-4 h-4 text-amber-300" />
-              <span>Two-factor authentication is currently disabled on your account.</span>
+    <div className="space-y-6 max-w-7xl mx-auto font-sans pb-10">
+      {/* ─── Compact Hero & Next Step Row ─── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Welcome Greeting (Col Span 2) */}
+        <div className="lg:col-span-2 rounded-2xl bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 p-6 text-white shadow-md shadow-blue-600/10 flex flex-col justify-between space-y-4">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 backdrop-blur-md text-white text-[11px] font-semibold">
+              <Sparkles className="w-3 h-3" />
+              <span>Student Learning Workspace</span>
             </div>
-            <Link
-              to="/profile"
-              className="px-3 py-1.5 rounded-lg bg-white text-blue-600 font-bold hover:bg-blue-50 transition-colors shadow-sm"
-            >
-              Enable 2FA Protection
-            </Link>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
+              Good morning, {user?.name || 'Student'} 👋
+            </h1>
+            <p className="text-blue-100 text-xs md:text-sm leading-relaxed max-w-xl">
+              Build mastery across full-stack curricula, real-world projects, and calibrated challenges.
+            </p>
           </div>
-        )}
-      </div>
 
-      {/* ─── SLP-13: Next Best Step (What to Learn Next) ─── */}
-      {nextAction && (
-        <div className="bg-gradient-to-r from-indigo-900/10 via-purple-900/10 to-blue-900/10 border border-indigo-200/80 dark:border-indigo-500/20 rounded-2xl p-6 backdrop-blur-md shadow-sm">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="space-y-1.5">
-              <div className="inline-flex items-center gap-1.5 text-xs font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">
-                <Zap className="w-3.5 h-3.5 fill-current" />
-                <span>Recommended Next Step For You</span>
+          {!user?.isTwoFactorEnabled && (
+            <div className="pt-3 border-t border-white/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
+              <div className="flex items-center gap-1.5 text-blue-100 text-[11px]">
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-300 shrink-0" />
+                <span>Two-factor authentication is currently disabled.</span>
               </div>
-              <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                {nextAction.title}
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {nextAction.reason} · {nextAction.subtitle}
-              </p>
+              <Link
+                to="/profile"
+                className="px-2.5 py-1 rounded-lg bg-white/90 text-blue-700 font-bold text-[11px] hover:bg-white transition-colors"
+              >
+                Enable 2FA
+              </Link>
             </div>
-
-            <Link
-              to={nextAction.link}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/20 transition-all shrink-0"
-            >
-              <span>{nextAction.type === 'continue_course' ? 'Resume Now' : 'Start Next Activity'}</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Statistics Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-2">
-          <div className="p-2.5 rounded-xl bg-blue-50 w-fit text-blue-600">
-            <BookOpen className="w-5 h-5" />
-          </div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Courses Started</p>
-          <p className="text-2xl font-bold text-slate-900">{progressSummary.coursesStarted || 0}</p>
+          )}
         </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-2">
-          <div className="p-2.5 rounded-xl bg-emerald-50 w-fit text-emerald-600">
-            <Trophy className="w-5 h-5" />
+        {/* Recommended Immediate Action (Col Span 1) */}
+        <div className="rounded-2xl bg-white border border-slate-200/80 p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex flex-col justify-between space-y-3">
+          <div className="space-y-1.5">
+            <div className="inline-flex items-center gap-1.5 text-[10px] font-bold text-indigo-600 uppercase tracking-wider">
+              <Zap className="w-3 h-3 fill-current" />
+              <span>Recommended Next Step</span>
+            </div>
+            <h2 className="text-sm font-bold text-slate-900 line-clamp-2">
+              {nextAction ? nextAction.title : 'Explore Course Offerings'}
+            </h2>
+            <p className="text-[11px] text-slate-500 line-clamp-2">
+              {nextAction ? `${nextAction.reason} · ${nextAction.subtitle}` : 'Get started with high-demand technology tracks.'}
+            </p>
           </div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Courses Completed</p>
-          <p className="text-2xl font-bold text-slate-900">{progressSummary.coursesCompleted || 0}</p>
-        </div>
 
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-2">
-          <div className="p-2.5 rounded-xl bg-purple-50 w-fit text-purple-600">
-            <CheckCircle className="w-5 h-5" />
-          </div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Lessons Completed</p>
-          <p className="text-2xl font-bold text-slate-900">{progressSummary.lessonsCompleted || 0}</p>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-2">
-          <div className="p-2.5 rounded-xl bg-amber-50 w-fit text-amber-600">
-            <TrendingUp className="w-5 h-5" />
-          </div>
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Overall Progress</p>
-          <p className="text-2xl font-bold text-slate-900">{progressSummary.overallProgress || 0}%</p>
+          <Link
+            to={nextAction?.link || '/courses'}
+            className="w-full inline-flex items-center justify-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+          >
+            <span>{nextAction?.type === 'continue_course' ? 'Resume Lesson' : 'Start Next Activity'}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
 
-      {/* Student Learning Calendar: Daily study time heatmap & consistency */}
-      <StudentLearningCalendar />
-
-      {/* Continue Learning Section */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      {/* ─── Compact Metrics Bar ─── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-blue-50 text-blue-600 shrink-0">
+            <BookOpen className="w-4 h-4" />
+          </div>
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Continue Learning</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Resume your recent lessons and active courses</p>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Courses Started</p>
+            <p className="text-xl font-bold text-slate-900">{progressSummary.coursesStarted || 0}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-600 shrink-0">
+            <Trophy className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Completed</p>
+            <p className="text-xl font-bold text-slate-900">{progressSummary.coursesCompleted || 0}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-purple-50 text-purple-600 shrink-0">
+            <CheckCircle className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Lessons Done</p>
+            <p className="text-xl font-bold text-slate-900">{progressSummary.lessonsCompleted || 0}</p>
+          </div>
+        </div>
+
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-[0_4px_20px_rgba(0,0,0,0.03)] flex items-center gap-3.5">
+          <div className="p-2.5 rounded-xl bg-amber-50 text-amber-600 shrink-0">
+            <TrendingUp className="w-4 h-4" />
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Overall Progress</p>
+            <p className="text-xl font-bold text-slate-900">{progressSummary.overallProgress || 0}%</p>
+          </div>
+        </div>
+      </div>
+
+      {/* ─── Continue Learning (Active In-Progress Courses) ─── */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-blue-600" />
+            <h2 className="text-base font-bold text-slate-900">Continue Learning</h2>
           </div>
           <Link
             to="/my-learning"
             className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
           >
-            View all my courses <ArrowRight className="w-3.5 h-3.5" />
+            <span>All Enrollments</span>
+            <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
 
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="h-40 bg-white rounded-2xl border border-slate-200 animate-pulse" />
-            <div className="h-40 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse" />
+            <div className="h-32 bg-white rounded-2xl border border-slate-200 animate-pulse" />
           </div>
         ) : enrolledCourses.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-200 p-8 text-center bg-slate-50/50 space-y-3">
-            <Compass className="w-8 h-8 text-slate-400 mx-auto" />
-            <h3 className="text-sm font-bold text-slate-700">No Active Enrollments</h3>
-            <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Browse our course catalog to get enrolled and kick off your technical learning journey.
-            </p>
+          <div className="rounded-2xl border border-dashed border-slate-200 p-6 text-center bg-slate-50/50 space-y-2">
+            <p className="text-xs font-semibold text-slate-700">No active course enrollments yet</p>
             <Link
               to="/courses"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold transition-colors"
             >
-              Explore Courses <ArrowRight className="w-4 h-4" />
+              <span>Explore Course Catalog</span>
+              <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {enrolledCourses.map((item) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {enrolledCourses.slice(0, 2).map((item) => {
               const course = item.courseId;
               if (!course) return null;
               const nextLessonId = item.currentLesson?._id;
@@ -216,40 +226,25 @@ const Dashboard = () => {
               return (
                 <div
                   key={item._id}
-                  className="bg-white rounded-2xl border border-slate-200/80 p-5 space-y-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:border-blue-300 transition-all flex flex-col justify-between"
+                  className="bg-white rounded-2xl border border-slate-200/80 p-4 space-y-3 shadow-[0_4px_20px_rgba(0,0,0,0.03)] hover:border-blue-300 transition-all flex flex-col justify-between"
                 >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-3">
+                  <div className="space-y-2">
+                    <div className="flex items-start justify-between gap-2">
                       <div>
-                        <span className="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">
+                        <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
                           {course.category}
                         </span>
-                        <h3 className="text-base font-bold text-slate-900 line-clamp-1">{course.title}</h3>
+                        <h3 className="text-sm font-bold text-slate-900 line-clamp-1">{course.title}</h3>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-                          {course.difficulty}
-                        </span>
-                        {item.progressPercentage === 100 ? (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                            <CheckCircle className="w-3.5 h-3.5" /> Completed
-                          </span>
-                        ) : item.progressPercentage > 0 ? (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                            In Progress
-                          </span>
-                        ) : (
-                          <span className="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
-                            Not Started
-                          </span>
-                        )}
-                      </div>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-700 shrink-0">
+                        {course.difficulty}
+                      </span>
                     </div>
 
-                    <ProgressBar percentage={item.progressPercentage} size="md" />
+                    <ProgressBar percentage={item.progressPercentage} size="sm" />
 
                     {item.currentLesson && (
-                      <p className="text-xs text-slate-500 truncate">
+                      <p className="text-[11px] text-slate-500 truncate">
                         <span className="font-semibold text-slate-700">Next:</span> {item.currentLesson.title}
                       </p>
                     )}
@@ -257,10 +252,10 @@ const Dashboard = () => {
 
                   <Link
                     to={nextLessonId ? `/learning/${course._id}/${nextLessonId}` : `/courses/${course._id}`}
-                    className="w-full py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors"
+                    className="w-full py-2 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors"
                   >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Continue Learning</span>
+                    <Play className="w-3 h-3 fill-current" />
+                    <span>Resume Course</span>
                   </Link>
                 </div>
               );
@@ -269,96 +264,127 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* ─── SLP-13: Personalized Recommended Courses & Drills ─── */}
-      {recommendations?.nextCourses?.length > 0 && (
-        <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-indigo-600" />
-                <h2 className="text-xl font-bold text-slate-900">Recommended Next For You</h2>
-              </div>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Curated based on your enrolled topics, skill tier, and learning velocity
-              </p>
-            </div>
-            <Link
-              to="/skill-learning"
-              className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+      {/* ─── Compact Tabbed Discovery Section ─── */}
+      <div className="space-y-4">
+        {/* Tab Headers */}
+        <div className="flex items-center justify-between border-b border-slate-200 pb-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setDiscoveryTab('recommended')}
+              className={`pb-1 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                discoveryTab === 'recommended'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-2'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
             >
-              View Full Skill Path <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
-          </div>
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Recommended Next</span>
+            </button>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {recommendations.nextCourses.map((course) => (
-              <div key={course._id} className="relative group flex flex-col justify-between">
-                <CourseCard course={course} />
-                {course.recommendationReason && (
-                  <div className="mt-2 text-[11px] font-medium text-indigo-700 bg-indigo-50 border border-indigo-100 rounded-lg px-2.5 py-1 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3 text-indigo-500 shrink-0" />
-                    <span className="truncate">{course.recommendationReason}</span>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* ─── SLP-13: Next Practice Problems ─── */}
-      {recommendations?.nextChallenges?.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                <Code2 className="w-4 h-4 text-emerald-600" />
-                Recommended Coding Practice
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Solve these questions to validate your understanding
-              </p>
-            </div>
-            <Link
-              to="/coding-challenges"
-              className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 flex items-center gap-1"
+            <button
+              onClick={() => setDiscoveryTab('practice')}
+              className={`pb-1 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                discoveryTab === 'practice'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-2'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
             >
-              Coding Arena <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+              <Code2 className="w-3.5 h-3.5" />
+              <span>Coding Practice</span>
+            </button>
+
+            <button
+              onClick={() => setDiscoveryTab('explore')}
+              className={`pb-1 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                discoveryTab === 'explore'
+                  ? 'text-indigo-600 border-b-2 border-indigo-600 -mb-2'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              <Compass className="w-3.5 h-3.5" />
+              <span>Featured Courses</span>
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {recommendations.nextChallenges.map((ch) => (
-              <ChallengeCard
-                key={ch._id}
-                challenge={ch}
-                matchReason={ch.recommendationReason}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Available Courses Showcase */}
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-slate-900">Explore All Courses</h2>
-            <p className="text-xs text-slate-500 mt-0.5">Explore our wide range of technical skill curricula</p>
-          </div>
           <Link
-            to="/courses"
-            className="text-xs font-semibold text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            to={
+              discoveryTab === 'practice'
+                ? '/coding-challenges'
+                : discoveryTab === 'recommended'
+                ? '/skill-learning'
+                : '/courses'
+            }
+            className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
           >
-            Explore all courses <ArrowRight className="w-3.5 h-3.5" />
+            <span>View All</span>
+            <ArrowRight className="w-3 h-3" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {featuredCourses.map((course) => (
-            <CourseCard key={course._id} course={course} />
-          ))}
+        {/* Tab 1: Recommended Courses */}
+        {discoveryTab === 'recommended' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {(recommendations?.nextCourses?.length ? recommendations.nextCourses.slice(0, 3) : featuredCourses).map(
+              (course) => (
+                <div key={course._id} className="relative group flex flex-col justify-between">
+                  <CourseCard course={course} />
+                </div>
+              )
+            )}
+          </div>
+        )}
+
+        {/* Tab 2: Coding Practice */}
+        {discoveryTab === 'practice' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {recommendations?.nextChallenges?.length ? (
+              recommendations.nextChallenges.slice(0, 3).map((ch) => (
+                <ChallengeCard
+                  key={ch._id}
+                  challenge={ch}
+                  matchReason={ch.recommendationReason}
+                />
+              ))
+            ) : (
+              <div className="col-span-3 p-8 text-center text-xs text-slate-400 bg-white rounded-2xl border border-slate-200">
+                Check out the Coding Arena for interactive programming drills.
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Tab 3: Featured Courses */}
+        {discoveryTab === 'explore' && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {featuredCourses.map((course) => (
+              <CourseCard key={course._id} course={course} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ─── Collapsible Study Calendar & Heatmap ─── */}
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-4 shadow-[0_4px_20px_rgba(0,0,0,0.03)] space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-blue-600" />
+            <h3 className="text-xs font-bold text-slate-900">Study Calendar & Consistency Tracker</h3>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowFullCalendar(!showFullCalendar)}
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <span>{showFullCalendar ? 'Collapse Heatmap' : 'Open Heatmap'}</span>
+            {showFullCalendar ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+          </button>
         </div>
+
+        {showFullCalendar && (
+          <div className="pt-2">
+            <StudentLearningCalendar />
+          </div>
+        )}
       </div>
     </div>
   );

@@ -447,6 +447,8 @@ export const enrollInProject = async (projectId) => {
 
 export const leaveProject = async (projectId) => {
   const response = await api.delete(`/projects/${projectId}/enroll`);
+  return response.data;
+};
 // ─── Internship Project Services (SLP-15) ────────────────────────────────────
 export const fetchInternshipProjects = async (params = {}) => {
   const response = await api.get('/internship-projects', { params });
@@ -608,10 +610,6 @@ export const getExerciseAttachmentUrl = (exerciseId) => {
   return `${baseURL}/exercises/${exerciseId}/attachment`;
 };
 
-  const response = await api.get('/internship-projects/student/my-projects');
-  return response.data;
-};
-
 export const fetchProjectCategories = async () => {
   try {
     const response = await api.get('/internship-projects/meta/categories');
@@ -687,6 +685,101 @@ export const fetchSkillActivities = async () => {
 export const fetchPersonalizedRecommendations = async () => {
   const response = await api.get('/recommendations/personalized');
   return response.data;
+};
+
+// ─── Project-Based Activities Services (SLP-7) ──────
+export const fetchActivities = async (params = {}) => {
+  const response = await api.get('/activities', { params });
+  return response.data;
+};
+
+export const fetchTrainerActivities = async () => {
+  const response = await api.get('/activities/trainer');
+  return response.data;
+};
+
+export const fetchActivityById = async (activityId) => {
+  const response = await api.get(`/activities/${activityId}`);
+  return response.data;
+};
+
+export const createActivity = async (courseId, activityData) => {
+  const url = courseId ? `/courses/${courseId}/activities` : '/activities';
+  const response = await api.post(url, activityData);
+  return response.data;
+};
+
+export const updateActivity = async (activityId, activityData) => {
+  const response = await api.put(`/activities/${activityId}`, activityData);
+  return response.data;
+};
+
+export const deleteActivity = async (activityId) => {
+  const response = await api.delete(`/activities/${activityId}`);
+  return response.data;
+};
+
+export const updateActivityStatus = async (activityId, status) => {
+  const response = await api.patch(`/activities/${activityId}/status`, { status });
+  return response.data;
+};
+
+export const createActivityMilestone = async (activityId, milestoneData) => {
+  const response = await api.post(`/activities/${activityId}/milestones`, milestoneData);
+  return response.data;
+};
+
+export const updateActivityMilestone = async (activityId, milestoneId, milestoneData) => {
+  const response = await api.put(`/activities/${activityId}/milestones/${milestoneId}`, milestoneData);
+  return response.data;
+};
+
+export const deleteActivityMilestone = async (activityId, milestoneId) => {
+  const response = await api.delete(`/activities/${activityId}/milestones/${milestoneId}`);
+  return response.data;
+};
+
+export const fetchActivityAssignments = async (activityId) => {
+  const response = await api.get(`/activities/${activityId}/assignments`);
+  return response.data;
+};
+
+export const startActivity = async (activityId) => {
+  const response = await api.post(`/activities/${activityId}/start`);
+  return response.data;
+};
+
+export const fetchActivityAssignment = async (assignmentId) => {
+  const response = await api.get(`/activity-assignments/${assignmentId}`);
+  return response.data;
+};
+
+export const updateActivityProgress = async (assignmentId, progressData) => {
+  const response = await api.patch(`/activity-assignments/${assignmentId}/progress`, progressData);
+  return response.data;
+};
+
+export const submitActivityWork = async (assignmentId, formData) => {
+  const isFormData = formData instanceof FormData;
+  const response = await api.post(`/activity-assignments/${assignmentId}/submissions`, formData, {
+    headers: isFormData ? { 'Content-Type': 'multipart/form-data' } : {},
+  });
+  return response.data;
+};
+
+export const fetchActivitySubmissions = async (assignmentId) => {
+  const response = await api.get(`/activity-assignments/${assignmentId}/submissions`);
+  return response.data;
+};
+
+export const reviewActivitySubmission = async (submissionId, reviewData) => {
+  const response = await api.patch(`/activity-submissions/${submissionId}/review`, reviewData);
+  return response.data;
+};
+
+export const getActivitySubmissionDownloadUrl = (submissionId, fileIndex = 0) => {
+  const baseURL = api.defaults.baseURL || 'http://localhost:5000/api';
+  return `${baseURL}/activity-submissions/${submissionId}/download/${fileIndex}`;
 };
 
 export default api;

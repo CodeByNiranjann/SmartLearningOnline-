@@ -39,10 +39,19 @@ if %ERRORLEVEL% neq 0 (
 )
 echo.
 
-echo [4/4] Seeding skill assessments...
+echo [4/5] Seeding skill assessments...
 node seed-assessment.js
 if %ERRORLEVEL% neq 0 (
     echo [ERROR] Failed to seed skill assessments.
+    pause
+    exit /b %ERRORLEVEL%
+)
+echo.
+
+echo [5/5] Seeding project-based activities (SLP-7)...
+node seedActivities.js
+if %ERRORLEVEL% neq 0 (
+    echo [ERROR] Failed to seed project activities.
     pause
     exit /b %ERRORLEVEL%
 )

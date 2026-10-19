@@ -13,6 +13,7 @@ import quizRoutes from './routes/quizRoutes.js';
 import resourceRoutes from './routes/resourceRoutes.js';
 import projectRoutes, { projectEnrollmentRoutes, projectSubmissionRoutes } from './routes/projectRoutes.js';
 import exerciseRoutes from './routes/exerciseRoutes.js';
+import activityRoutes, { activityAssignmentRoutes, activitySubmissionRoutes } from './routes/activityRoutes.js';
 
 import enrollmentRoutes from './routes/enrollmentRoutes.js';
 import internshipProjectRoutes from './routes/internshipProjectRoutes.js';
@@ -43,6 +44,9 @@ app.use('/api', resourceRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/project-enrollments', projectEnrollmentRoutes);
 app.use('/api/project-submissions', projectSubmissionRoutes);
+app.use('/api/activities', activityRoutes);
+app.use('/api/activity-assignments', activityAssignmentRoutes);
+app.use('/api/activity-submissions', activitySubmissionRoutes);
 app.use('/api/exercises', exerciseRoutes);
 app.use('/api', exerciseRoutes);
 app.use('/api/internship-projects', internshipProjectRoutes);
