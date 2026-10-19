@@ -20,7 +20,6 @@ import internshipProjectRoutes from './routes/internshipProjectRoutes.js';
 import codingChallengeRoutes from './routes/codingChallengeRoutes.js';
 import skillLearningRoutes from './routes/skillLearningRoutes.js';
 import recommendationRoutes from './routes/recommendationRoutes.js';
-import resourceRoutes from './routes/resourceRoutes.js';
 import attemptRoutes from './routes/attemptRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 
@@ -44,7 +43,6 @@ app.use('/api/progress', progressRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/instructor', instructorRoutes);
 app.use('/api/quizzes', quizRoutes);
-app.use('/api', resourceRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/project-enrollments', projectEnrollmentRoutes);
 app.use('/api/project-submissions', projectSubmissionRoutes);

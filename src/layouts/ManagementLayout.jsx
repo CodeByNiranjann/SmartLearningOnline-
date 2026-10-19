@@ -22,6 +22,7 @@ import {
   Code2,
   FolderGit2,
   HelpCircle,
+  CheckSquare,
 } from 'lucide-react';
 
 const ManagementLayout = () => {
@@ -50,6 +51,7 @@ const ManagementLayout = () => {
     { name: 'Practical Exercises', path: '/manage/exercises', icon: Code2 },
     { name: 'Real-World Projects', path: '/manage/projects', icon: FolderGit2 },
     { name: 'Quizzes', path: '/instructor/quizzes', icon: HelpCircle },
+    { name: 'Tasks', path: '/instructor/tasks', icon: CheckSquare },
     { name: 'Reports & Analytics', path: '/admin/reports', icon: BarChart3 },
     { name: 'Manage Settings', path: '/admin/settings', icon: Settings },
   ];
@@ -63,9 +65,8 @@ const ManagementLayout = () => {
     { name: 'Project Activities', path: '/manage/activities', icon: Sparkles },
     { name: 'Practical Exercises', path: '/manage/exercises', icon: Code2 },
     { name: 'Real-World Projects', path: '/manage/projects', icon: FolderGit2 },
-    { name: 'My Students', path: '/instructor/students', icon: GraduationCap },
     { name: 'Quizzes', path: '/instructor/quizzes', icon: HelpCircle },
-    { name: 'Tasks', path: '/instructor/tasks', icon: GraduationCap },
+    { name: 'Tasks', path: '/instructor/tasks', icon: CheckSquare },
     { name: 'My Students', path: '/instructor/students', icon: Users },
     { name: 'Progress & Reports', path: '/instructor/reports', icon: BarChart3 },
     { name: 'My Profile', path: '/profile', icon: User },
