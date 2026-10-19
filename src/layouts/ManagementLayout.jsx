@@ -21,6 +21,7 @@ import {
   User,
   Code2,
   FolderGit2,
+  HelpCircle,
 } from 'lucide-react';
 
 const ManagementLayout = () => {
@@ -41,12 +42,14 @@ const ManagementLayout = () => {
   const adminNav = [
     { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Users', path: '/admin/users', icon: Users },
+    { name: 'Audit Logs', path: '/admin/audit-logs', icon: Shield },
     { name: 'Instructors', path: '/admin/instructors', icon: UserCheck },
     { name: 'All Courses', path: '/manage/courses', icon: BookOpen },
     { name: 'Modules & Lessons', path: '/admin/curriculum', icon: Layers },
     { name: 'Project Activities', path: '/manage/activities', icon: Sparkles },
     { name: 'Practical Exercises', path: '/manage/exercises', icon: Code2 },
     { name: 'Real-World Projects', path: '/manage/projects', icon: FolderGit2 },
+    { name: 'Quizzes', path: '/instructor/quizzes', icon: HelpCircle },
     { name: 'Reports & Analytics', path: '/admin/reports', icon: BarChart3 },
     { name: 'Manage Settings', path: '/admin/settings', icon: Settings },
   ];
@@ -61,6 +64,9 @@ const ManagementLayout = () => {
     { name: 'Practical Exercises', path: '/manage/exercises', icon: Code2 },
     { name: 'Real-World Projects', path: '/manage/projects', icon: FolderGit2 },
     { name: 'My Students', path: '/instructor/students', icon: GraduationCap },
+    { name: 'Quizzes', path: '/instructor/quizzes', icon: HelpCircle },
+    { name: 'Tasks', path: '/instructor/tasks', icon: GraduationCap },
+    { name: 'My Students', path: '/instructor/students', icon: Users },
     { name: 'Progress & Reports', path: '/instructor/reports', icon: BarChart3 },
     { name: 'My Profile', path: '/profile', icon: User },
   ];

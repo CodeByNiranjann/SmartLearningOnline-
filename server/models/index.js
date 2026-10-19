@@ -23,6 +23,11 @@ import ProjectActivity from './ProjectActivity.js';
 import ActivityMilestone from './ActivityMilestone.js';
 import ActivityAssignment from './ActivityAssignment.js';
 import ActivitySubmission from './ActivitySubmission.js';
+import InternshipProject from './InternshipProject.js';
+import StudentProjectProgress from './StudentProjectProgress.js';
+import CodingChallenge from './CodingChallenge.js';
+import ChallengeAttempt from './ChallengeAttempt.js';
+import SkillAssessment from './SkillAssessment.js';
 
 export {
   User,
@@ -49,4 +54,10 @@ export {
   ActivityMilestone,
   ActivityAssignment,
   ActivitySubmission,
+  InternshipProject,
+  StudentProjectProgress,
+  CodingChallenge,
+  ChallengeAttempt,
+  SkillAssessment,
+
 };

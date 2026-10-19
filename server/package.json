@@ -27,6 +27,7 @@
     "dotenv": "^16.4.7",
     "express": "^4.22.3",
     "jsonwebtoken": "^9.0.2",
+    "mongodb-memory-server": "^11.3.0",
     "mongoose": "^8.12.1",
     "multer": "^2.4.0",
     "qrcode": "^1.5.4",
